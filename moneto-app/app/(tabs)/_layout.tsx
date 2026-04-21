@@ -2,21 +2,26 @@ import { Tabs } from "expo-router";
 import { Platform, View, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@hooks/useTheme";
 import { haptics } from "@hooks/useHaptics";
+import {
+  TAB_BAR_CONTENT_HEIGHT,
+  useTabBarBottomPad,
+} from "@hooks/useTabBarSpace";
 
-const TAB_BAR_CONTENT_HEIGHT = 54;
-
+/**
+ * Bottom tab bar spec:
+ * - iOS: 56pt content + 34pt home indicator = 90pt total (Revolut/Nubank-tier)
+ * - iPhone SE (home button): 56pt + 8pt padding = 64pt total
+ * - Android gesture nav: 64dp content + 24dp inset = 88dp total
+ * - Android 3-button: 64dp content + 48dp inset = 112dp total
+ *
+ * Icon 24pt (Apple HIG) / 24dp (Material) · label 11pt iOS / 12sp Android
+ */
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
-  const insets = useSafeAreaInsets();
-
-  // En devices con home indicator iOS insets.bottom ~34
-  // En Android con gesture nav insets.bottom ~16-24
-  // En devices con home button físico insets.bottom ~0, damos 12 de respiro
-  const bottomPad = insets.bottom > 0 ? insets.bottom : 12;
-  const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + bottomPad;
+  const bottomPad = useTabBarBottomPad();
+  const totalHeight = TAB_BAR_CONTENT_HEIGHT + bottomPad;
 
   return (
     <Tabs
@@ -26,15 +31,13 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",
-          fontSize: 10.5,
-          letterSpacing: 0.3,
-          marginTop: 2,
-        },
-        tabBarIconStyle: {
-          marginBottom: -2,
+          fontSize: Platform.OS === "ios" ? 11 : 12,
+          letterSpacing: 0.2,
+          marginTop: 3,
         },
         tabBarItemStyle: {
           paddingTop: 8,
+          paddingBottom: 4,
           height: TAB_BAR_CONTENT_HEIGHT,
         },
         tabBarStyle: {
@@ -46,7 +49,7 @@ export default function TabsLayout() {
           borderTopWidth: StyleSheet.hairlineWidth,
           backgroundColor:
             Platform.OS === "ios" ? "transparent" : colors.bg.primary,
-          height: tabBarHeight,
+          height: totalHeight,
           paddingBottom: bottomPad,
           paddingTop: 0,
           elevation: 0,
@@ -79,7 +82,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "home" : "home-outline"}
-              size={22}
+              size={24}
               color={color}
             />
           ),
@@ -92,7 +95,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "card" : "card-outline"}
-              size={22}
+              size={24}
               color={color}
             />
           ),
@@ -105,7 +108,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "leaf" : "leaf-outline"}
-              size={22}
+              size={24}
               color={color}
             />
           ),
@@ -118,7 +121,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "person-circle" : "person-circle-outline"}
-              size={22}
+              size={24}
               color={color}
             />
           ),

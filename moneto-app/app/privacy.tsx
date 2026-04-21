@@ -281,36 +281,39 @@ function ActionRow({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        padding: 14,
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: colors.border.subtle,
-        backgroundColor: pressed ? colors.bg.overlay : "transparent",
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
     >
       <View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: colors.bg.elevated,
+          flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
+          gap: 12,
+          padding: 14,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: colors.border.subtle,
         }}
       >
-        <Ionicons name={icon} size={16} color={colors.text.primary} />
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: colors.bg.elevated,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name={icon} size={16} color={colors.text.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="bodyMedium">{label}</Text>
+          <Text variant="bodySmall" tone="tertiary">
+            {sub}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text variant="bodyMedium">{label}</Text>
-        <Text variant="bodySmall" tone="tertiary">
-          {sub}
-        </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
     </Pressable>
   );
 }

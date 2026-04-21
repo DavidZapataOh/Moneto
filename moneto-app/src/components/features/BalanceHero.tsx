@@ -21,8 +21,11 @@ interface BalanceHeroProps {
 }
 
 /**
- * Balance hero con ticker animado de yield.
- * Cumple principio "ceremony for money-in moments" — el saldo respira.
+ * Balance hero — única emphasis de la Home screen.
+ * Sigue reglas mobile-design:
+ * - 4 tamaños en el screen (48 hero, 24 para amount secundaria, 16 body, 12 label)
+ * - Solo 2 weights (500 medium y 400 regular)
+ * - Una emphasis: el número del saldo
  */
 export function BalanceHero({
   balance,
@@ -33,7 +36,6 @@ export function BalanceHero({
 }: BalanceHeroProps) {
   const { colors } = useTheme();
 
-  // Yield ticker — acumula en tiempo real para dar sensación de movimiento
   const yieldAccrued = useSharedValue(0);
   const perSecond = (balance * yieldApy) / (365 * 24 * 60 * 60);
 
@@ -50,7 +52,7 @@ export function BalanceHero({
 
   const balanceOpacity = useSharedValue(1);
   useEffect(() => {
-    balanceOpacity.value = withTiming(hidden ? 0.2 : 1, { duration: 220 });
+    balanceOpacity.value = withTiming(hidden ? 0.25 : 1, { duration: 200 });
   }, [hidden, balanceOpacity]);
 
   const balanceStyle = useAnimatedStyle(() => ({
@@ -61,108 +63,125 @@ export function BalanceHero({
   const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
 
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Text variant="label" tone="secondary">
-          Saldo total
-        </Text>
-        <Pressable
-          onPress={() => {
-            haptics.tap();
-            onToggleVisibility();
-          }}
-          hitSlop={8}
-        >
-          <Ionicons
-            name={hidden ? "eye-off-outline" : "eye-outline"}
-            size={16}
-            color={colors.text.tertiary}
-          />
-        </Pressable>
+    <View style={{ gap: 12 }}>
+      {/* Eyebrow */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text variant="label" tone="tertiary">
+            Saldo total
+          </Text>
+          <Pressable
+            onPress={() => {
+              haptics.tap();
+              onToggleVisibility();
+            }}
+            hitSlop={12}
+          >
+            <Ionicons
+              name={hidden ? "eye-off-outline" : "eye-outline"}
+              size={16}
+              color={colors.text.tertiary}
+            />
+          </Pressable>
+        </View>
         {isPrivate && (
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               gap: 4,
-              marginLeft: "auto",
             }}
           >
             <Ionicons name="lock-closed" size={12} color={colors.value} />
-            <Text variant="label" tone="value" style={{ letterSpacing: 0.8 }}>
+            <Text variant="label" tone="value">
               Privado
             </Text>
           </View>
         )}
       </View>
 
+      {/* Hero number — 48pt fits 8-pt grid */}
       <Animated.View style={balanceStyle}>
         <View style={{ flexDirection: "row", alignItems: "baseline" }}>
           <Text
             style={{
               fontFamily: fonts.monoMedium,
-              fontSize: 56,
-              lineHeight: 58,
-              letterSpacing: -1.6,
+              fontSize: 48,
+              lineHeight: 52,
+              letterSpacing: -1.4,
               color: colors.text.primary,
             }}
+            allowFontScaling={false}
+            numberOfLines={1}
           >
-            {hidden ? "••••" : `$${formattedInt}`}
+            {hidden ? "••••••" : `$${formattedInt}`}
           </Text>
           {!hidden && (
-            <Text
-              style={{
-                fontFamily: fonts.monoMedium,
-                fontSize: 28,
-                lineHeight: 32,
-                letterSpacing: -0.6,
-                color: colors.text.secondary,
-                marginLeft: 2,
-              }}
-            >
-              .{decPart}
-            </Text>
-          )}
-          {!hidden && (
-            <Text
-              style={{
-                fontFamily: fonts.sansMedium,
-                fontSize: 14,
-                color: colors.text.tertiary,
-                marginLeft: 8,
-                letterSpacing: 0.2,
-              }}
-            >
-              USD
-            </Text>
+            <>
+              <Text
+                style={{
+                  fontFamily: fonts.monoMedium,
+                  fontSize: 24,
+                  lineHeight: 28,
+                  letterSpacing: -0.4,
+                  color: colors.text.tertiary,
+                }}
+                allowFontScaling={false}
+              >
+                .{decPart}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.sansMedium,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  color: colors.text.tertiary,
+                  marginLeft: 8,
+                  letterSpacing: 0.4,
+                }}
+              >
+                USD
+              </Text>
+            </>
           )}
         </View>
       </Animated.View>
 
+      {/* Yield line */}
       {!hidden && (
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             gap: 8,
-            marginTop: 4,
           }}
         >
           <View
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
               backgroundColor: colors.value,
             }}
           />
           <Text variant="bodySmall" tone="secondary">
-            Rindiendo{" "}
             <Text variant="bodySmall" tone="value">
               {(yieldApy * 100).toFixed(2)}% APY
             </Text>
-            {" · +$"}
-            <Text variant="amountSecondary" tone="value">
+            {"  ·  +$"}
+            <Text
+              style={{
+                fontFamily: fonts.monoMedium,
+                fontSize: 12,
+                color: colors.value,
+              }}
+            >
               {(perSecond * 86400).toFixed(2)}
             </Text>
             {" hoy"}

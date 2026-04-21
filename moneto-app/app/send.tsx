@@ -219,24 +219,26 @@ export default function SendScreen() {
                       setSelected(c);
                       Keyboard.dismiss();
                     }}
-                    style={({ pressed }) => ({
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                      paddingVertical: 10,
-                      paddingHorizontal: 4,
-                      borderRadius: 12,
-                      backgroundColor: pressed ? colors.bg.overlay : "transparent",
-                    })}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
                   >
-                    <Avatar name={c.name} size="md" tone="neutral" />
-                    <View style={{ flex: 1 }}>
-                      <Text variant="bodyMedium">{c.name}</Text>
-                      <Text variant="bodySmall" tone="tertiary">
-                        {c.handle}
-                      </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                        paddingVertical: 10,
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      <Avatar name={c.name} size="md" tone="neutral" />
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodyMedium">{c.name}</Text>
+                        <Text variant="bodySmall" tone="tertiary">
+                          {c.handle}
+                        </Text>
+                      </View>
+                      <Badge label="Moneto" tone="brand" size="sm" />
                     </View>
-                    <Badge label="Moneto" tone="brand" size="sm" />
                   </Pressable>
                 ))}
               </View>
@@ -369,35 +371,35 @@ function ModePill({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        paddingVertical: 12,
-        paddingHorizontal: 8,
-        borderRadius: 12,
-        backgroundColor: active
-          ? colors.bg.elevated
-          : "transparent",
-        borderWidth: 1,
-        borderColor: active ? colors.border.default : colors.border.subtle,
-        opacity: pressed ? 0.75 : 1,
-      })}
+      style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.75 : 1 })}
     >
-      <Ionicons
-        name={icon}
-        size={15}
-        color={active ? colors.text.primary : colors.text.tertiary}
-      />
-      <Text
-        variant="bodySmall"
-        tone={active ? "primary" : "tertiary"}
-        style={{ fontWeight: "500" }}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          paddingVertical: 12,
+          paddingHorizontal: 8,
+          borderRadius: 12,
+          backgroundColor: active ? colors.bg.elevated : "transparent",
+          borderWidth: 1,
+          borderColor: active ? colors.border.default : colors.border.subtle,
+        }}
       >
-        {label}
-      </Text>
+        <Ionicons
+          name={icon}
+          size={15}
+          color={active ? colors.text.primary : colors.text.tertiary}
+        />
+        <Text
+          variant="bodySmall"
+          tone={active ? "primary" : "tertiary"}
+          style={{ fontWeight: "500" }}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }

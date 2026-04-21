@@ -203,18 +203,23 @@ export default function ReceiveScreen() {
         onPress={simulatePayroll}
         style={({ pressed }) => ({
           marginTop: 20,
-          padding: 14,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: colors.border.subtle,
-          borderStyle: "dashed",
-          alignItems: "center",
           opacity: pressed ? 0.6 : 1,
         })}
       >
-        <Text variant="bodySmall" tone="tertiary">
-          🧪 Simular recepción $3,000 USD (demo)
-        </Text>
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.border.subtle,
+            borderStyle: "dashed",
+            alignItems: "center",
+          }}
+        >
+          <Text variant="bodySmall" tone="tertiary">
+            🧪 Simular recepción $3,000 USD (demo)
+          </Text>
+        </View>
       </Pressable>
     </Screen>
   );

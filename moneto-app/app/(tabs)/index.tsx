@@ -6,8 +6,8 @@ import { Screen } from "@components/ui/Screen";
 import { Text } from "@components/ui/Text";
 import { Card } from "@components/ui/Card";
 import { Avatar } from "@components/ui/Avatar";
-import { IconButton } from "@components/ui/IconButton";
 import { Divider } from "@components/ui/Divider";
+import { SectionHeader } from "@components/ui/ScreenHeader";
 import { BalanceHero } from "@components/features/BalanceHero";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
@@ -18,178 +18,194 @@ import { useTheme } from "@hooks/useTheme";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { haptics } from "@hooks/useHaptics";
 
+// Spacing system (8-pt grid):
+// - SCREEN_PADDING: 20 (handled by Screen padded=true)
+// - SECTION_GAP: 32 (entre sección y sección)
+// - CARD_RADIUS: 20 (todas las cards de esta screen)
+// - ROW_HEIGHT: ~68 (avatar 40 + padding 14×2)
+
+const SECTION_GAP = 32;
+
 export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAppStore((s) => s.user);
   const balance = useAppStore((s) => s.balance);
-  const transactions = useAppStore((s) => s.transactions).slice(0, 6);
+  const transactions = useAppStore((s) => s.transactions).slice(0, 5);
   const balanceHidden = useAppStore((s) => s.balanceHidden);
   const toggleBalanceVisibility = useAppStore((s) => s.toggleBalanceVisibility);
   const bottomSpace = useTabBarSpace();
 
   return (
-    <Screen padded={false} edges={["top"]} scroll>
-      <View style={{ paddingHorizontal: 20 }}>
-        {/* Top bar */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            paddingTop: 8,
-            paddingBottom: 28,
+    <Screen padded edges={["top"]} scroll>
+      {/* Top bar — altura 44 (tap target mínimo iOS) */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          height: 44,
+          marginBottom: 32,
+        }}
+      >
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            router.push("/(tabs)/profile");
+          }}
+          style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+          hitSlop={8}
+        >
+          <Avatar name={user.name} size="sm" tone="brand" />
+          <View style={{ gap: 2 }}>
+            <Text variant="label" tone="tertiary">
+              Buenos días
+            </Text>
+            <Text variant="bodyMedium">{user.name.split(" ")[0]}</Text>
+          </View>
+        </Pressable>
+
+        <View style={{ flexDirection: "row", gap: 4 }}>
+          <HeaderIconButton
+            icon="scan-outline"
+            onPress={() => haptics.tap()}
+          />
+          <HeaderIconButton
+            icon="notifications-outline"
+            hasBadge
+            onPress={() => haptics.tap()}
+          />
+        </View>
+      </View>
+
+      {/* Balance hero — única emphasis de la pantalla */}
+      <Animated.View entering={FadeInDown.duration(400).delay(40)}>
+        <BalanceHero
+          balance={balance.totalUsd}
+          yieldApy={balance.yieldApy}
+          hidden={balanceHidden}
+          onToggleVisibility={toggleBalanceVisibility}
+        />
+      </Animated.View>
+
+      {/* Quick actions */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(120)}
+        style={{ marginTop: SECTION_GAP }}
+      >
+        <QuickActions />
+      </Animated.View>
+
+      {/* Yield module — card clickable */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(200)}
+        style={{ marginTop: SECTION_GAP }}
+      >
+        <SectionHeader
+          title="Rendimiento"
+          action={{
+            label: "Ver detalle",
+            onPress: () => {
+              haptics.tap();
+              router.push("/(tabs)/yield");
+            },
+          }}
+        />
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            router.push("/(tabs)/yield");
           }}
         >
-          <Pressable
-            onPress={() => {
-              haptics.tap();
-              router.push("/(tabs)/profile");
-            }}
-            style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            hitSlop={8}
-          >
-            <Avatar name={user.name} size="sm" tone="brand" />
-            <View>
-              <Text variant="bodySmall" tone="tertiary">
-                Hola,
-              </Text>
-              <Text variant="bodyMedium">{user.name.split(" ")[0]}</Text>
-            </View>
-          </Pressable>
-
-          <View style={{ flexDirection: "row", gap: 6 }}>
-            <IconButton
-              icon={<Ionicons name="search-outline" size={20} color={colors.text.primary} />}
-              variant="filled"
-              size="sm"
-              onPress={() => {}}
-              label="Buscar"
-            />
-            <IconButton
-              icon={
-                <View>
-                  <Ionicons name="notifications-outline" size={20} color={colors.text.primary} />
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: -2,
-                      right: -2,
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: colors.brand.primary,
-                    }}
-                  />
-                </View>
-              }
-              variant="filled"
-              size="sm"
-              onPress={() => {}}
-              label="Notificaciones"
-            />
-          </View>
-        </View>
-
-        {/* Balance hero */}
-        <Animated.View entering={FadeInDown.duration(400).delay(40)}>
-          <BalanceHero
-            balance={balance.totalUsd}
-            yieldApy={balance.yieldApy}
-            hidden={balanceHidden}
-            onToggleVisibility={toggleBalanceVisibility}
-          />
-        </Animated.View>
-
-        {/* Quick actions */}
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(120)}
-          style={{ marginTop: 32 }}
-        >
-          <QuickActions />
-        </Animated.View>
-
-        {/* Yield chart mini */}
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(200)}
-          style={{ marginTop: 28 }}
-        >
-          <Card variant="sunken" padded radius="xl">
+          <Card variant="elevated" padded radius="lg">
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 12,
+                alignItems: "baseline",
+                gap: 8,
+                marginBottom: 16,
               }}
             >
-              <View style={{ gap: 4 }}>
-                <Text variant="label" tone="secondary">
-                  Rendimiento
-                </Text>
-                <Text variant="amountPrimary" tone="value">
-                  +${balance.yieldAccruedMonth.toFixed(2)}{" "}
-                  <Text variant="bodySmall" tone="tertiary">
-                    este mes
-                  </Text>
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => {
-                  haptics.tap();
-                  router.push("/(tabs)/yield");
-                }}
-                hitSlop={8}
-              >
-                <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
-              </Pressable>
+              <Text variant="amountPrimary" tone="value" style={{ fontSize: 24 }}>
+                +${balance.yieldAccruedMonth.toFixed(2)}
+              </Text>
+              <Text variant="bodySmall" tone="tertiary">
+                este mes · {(balance.yieldApy * 100).toFixed(2)}% APY
+              </Text>
             </View>
             <YieldChart points={mockYieldHistory} height={72} />
           </Card>
-        </Animated.View>
+        </Pressable>
+      </Animated.View>
 
-        {/* Transacciones recientes */}
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(280)}
-          style={{ marginTop: 32 }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
-            }}
-          >
-            <Text variant="label" tone="secondary">
-              Movimientos
-            </Text>
-            <Pressable
-              onPress={() => {
-                haptics.tap();
-                router.push("/(tabs)/profile");
-              }}
-              hitSlop={8}
-            >
-              <Text variant="bodySmall" tone="brand">
-                Ver todo
-              </Text>
-            </Pressable>
-          </View>
+      {/* Transactions — rows flat dentro de card padded=false */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(280)}
+        style={{ marginTop: SECTION_GAP }}
+      >
+        <SectionHeader
+          title="Movimientos"
+          action={{
+            label: "Ver todos",
+            onPress: () => haptics.tap(),
+          }}
+        />
+        <Card variant="elevated" padded={false} radius="lg">
+          {transactions.map((tx, i) => (
+            <View key={tx.id}>
+              <TransactionRow tx={tx} onPress={() => haptics.tap()} />
+              {i < transactions.length - 1 && (
+                <View style={{ paddingHorizontal: 16 }}>
+                  <Divider />
+                </View>
+              )}
+            </View>
+          ))}
+        </Card>
+      </Animated.View>
 
-          <View style={{ gap: 2 }}>
-            {transactions.map((tx, i) => (
-              <View key={tx.id}>
-                <TransactionRow tx={tx} onPress={() => {}} />
-                {i < transactions.length - 1 && <Divider />}
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-
-        {/* Footer spacing for tab bar + home indicator */}
-        <View style={{ height: bottomSpace }} />
-      </View>
+      <View style={{ height: bottomSpace }} />
     </Screen>
+  );
+}
+
+function HeaderIconButton({
+  icon,
+  onPress,
+  hasBadge = false,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  hasBadge?: boolean;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      style={{
+        width: 44,
+        height: 44,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Ionicons name={icon} size={22} color={colors.text.primary} />
+      {hasBadge && (
+        <View
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 10,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: colors.brand.primary,
+            borderWidth: 2,
+            borderColor: colors.bg.primary,
+          }}
+        />
+      )}
+    </Pressable>
   );
 }

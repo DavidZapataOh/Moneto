@@ -1,11 +1,10 @@
 import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "../ui/Text";
-import { Avatar } from "../ui/Avatar";
-import { AmountDisplay } from "../ui/AmountDisplay";
 import { useTheme } from "@hooks/useTheme";
 import { haptics } from "@hooks/useHaptics";
 import { formatRelative } from "@lib/format";
+import { fonts } from "@theme/typography";
 import type { Transaction } from "@data/mock";
 
 interface TransactionRowProps {
@@ -15,22 +14,56 @@ interface TransactionRowProps {
 }
 
 const typeConfig = {
-  payroll: { icon: "arrow-down" as const, tone: "success" as const, label: "Salario" },
-  p2p_in: { icon: "arrow-down" as const, tone: "success" as const, label: "Recibido" },
-  p2p_out: { icon: "arrow-up" as const, tone: "secondary" as const, label: "Enviado" },
-  card: { icon: "card-outline" as const, tone: "secondary" as const, label: "Tarjeta" },
-  cashout: { icon: "cash-outline" as const, tone: "secondary" as const, label: "Retiro" },
-  yield: { icon: "leaf-outline" as const, tone: "value" as const, label: "Rendimiento" },
-  credit: { icon: "git-branch-outline" as const, tone: "secondary" as const, label: "Crédito" },
+  payroll: { icon: "arrow-down" as const, color: "success" as const, label: "Nómina" },
+  p2p_in: { icon: "arrow-down" as const, color: "success" as const, label: "Recibido" },
+  p2p_out: { icon: "arrow-up" as const, color: "primary" as const, label: "Enviado" },
+  card: { icon: "card" as const, color: "primary" as const, label: "Tarjeta" },
+  cashout: { icon: "cash" as const, color: "primary" as const, label: "Retiro" },
+  yield: { icon: "leaf" as const, color: "value" as const, label: "Rendimiento" },
+  credit: { icon: "git-branch" as const, color: "primary" as const, label: "Crédito" },
 };
 
-export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowProps) {
+/**
+ * Layout horizontal rica (como VaultRow en Yield):
+ *
+ *   ┌─────────────────────────────────────────────┐
+ *   │  ◉   Acme Inc.               +$3,000 USD    │
+ *   │      Nómina · hace 1 día     🔒 Privado     │
+ *   └─────────────────────────────────────────────┘
+ *
+ * Top line: título (flex:1) + amount (derecha) baseline aligned
+ * Bottom line: tipo · fecha (flex:1) + status privacy (derecha)
+ * Ambas líneas tienen contenido a IZQUIERDA y DERECHA → estructura visible
+ */
+export function TransactionRow({
+  tx,
+  onPress,
+  showDate = true,
+}: TransactionRowProps) {
   const { colors } = useTheme();
   const cfg = typeConfig[tx.type];
   const isIncoming = tx.amount > 0;
 
-  const amountTone: "success" | "primary" | "value" =
-    tx.type === "yield" ? "value" : isIncoming ? "success" : "primary";
+  const amountColor =
+    tx.type === "yield"
+      ? colors.value
+      : isIncoming
+        ? colors.success
+        : colors.text.primary;
+
+  const iconBg =
+    cfg.color === "success"
+      ? "rgba(107, 122, 56, 0.18)"
+      : cfg.color === "value"
+        ? "rgba(200, 148, 80, 0.18)"
+        : "rgba(255, 255, 255, 0.08)"; // visible en card elevated
+
+  const iconColor =
+    cfg.color === "success"
+      ? colors.success
+      : cfg.color === "value"
+        ? colors.value
+        : colors.text.secondary;
 
   const handlePress = () => {
     if (!onPress) return;
@@ -38,95 +71,138 @@ export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowP
     onPress();
   };
 
-  const iconBg =
-    cfg.tone === "success"
-      ? "rgba(107, 122, 56, 0.14)"
-      : cfg.tone === "value"
-        ? "rgba(200, 148, 80, 0.14)"
-        : colors.bg.overlay;
+  const title = tx.counterpartyName ?? cfg.label;
+  const typeLabel = tx.counterpartyName ? cfg.label : tx.description;
+  const timeLabel = showDate ? formatRelative(tx.timestamp) : "";
 
-  const iconColor =
-    cfg.tone === "success"
-      ? colors.success
-      : cfg.tone === "value"
-        ? colors.value
-        : colors.text.secondary;
+  // Format amount — SIN nested Text
+  const sign = tx.amount > 0 ? "+" : tx.amount < 0 ? "−" : "";
+  const absAmt = Math.abs(tx.amount);
+  const [intPart, decPart] = absAmt.toFixed(2).split(".");
+  const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
 
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 4,
-        borderRadius: 12,
-        backgroundColor: pressed ? colors.bg.overlay : "transparent",
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
     >
-      {tx.counterpartyName ? (
-        <Avatar name={tx.counterpartyName} size="md" tone="neutral" />
-      ) : (
+      {/* Layout exactamente como VaultRow: View plano con todo el styling */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          gap: 12,
+        }}
+      >
+        {/* Icon 48×48 */}
         <View
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
             backgroundColor: iconBg,
             alignItems: "center",
             justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          <Ionicons name={cfg.icon} size={18} color={iconColor} />
+          <Ionicons name={cfg.icon} size={20} color={iconColor} />
         </View>
-      )}
 
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text variant="bodyMedium" numberOfLines={1}>
-          {tx.counterpartyName ?? cfg.label}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          <Text variant="bodySmall" tone="tertiary">
-            {tx.description}
+        {/* Content column */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+        {/* TOP LINE: title (left) + amount (right) */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 8,
+            marginBottom: 4,
+          }}
+        >
+          <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
+            {title}
           </Text>
-          {showDate && (
-            <>
-              <View
-                style={{
-                  width: 2,
-                  height: 2,
-                  borderRadius: 1,
-                  backgroundColor: colors.text.tertiary,
-                }}
+
+          {/* Amount — View con dos Text separados (NO nested) */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "baseline",
+              flexShrink: 0,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.monoMedium,
+                fontSize: 16,
+                lineHeight: 20,
+                letterSpacing: -0.1,
+                color: amountColor,
+              }}
+              allowFontScaling={false}
+            >
+              {sign}${formattedInt}
+            </Text>
+            <Text
+              style={{
+                fontFamily: fonts.monoMedium,
+                fontSize: 12,
+                lineHeight: 16,
+                color: amountColor,
+                opacity: 0.55,
+              }}
+              allowFontScaling={false}
+            >
+              .{decPart}
+            </Text>
+          </View>
+        </View>
+
+        {/* BOTTOM LINE: tipo · timestamp (left) + privacy (right) */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <Text
+            variant="bodySmall"
+            tone="tertiary"
+            numberOfLines={1}
+            style={{ flex: 1 }}
+          >
+            {typeLabel}
+            {timeLabel ? "  ·  " + timeLabel : ""}
+          </Text>
+
+          {tx.isPrivate && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                flexShrink: 0,
+              }}
+            >
+              <Ionicons
+                name="lock-closed"
+                size={10}
+                color={colors.text.tertiary}
               />
               <Text variant="bodySmall" tone="tertiary">
-                {formatRelative(tx.timestamp)}
+                Privado
               </Text>
-            </>
-          )}
-          {tx.isPrivate && (
-            <>
-              <View
-                style={{
-                  width: 2,
-                  height: 2,
-                  borderRadius: 1,
-                  backgroundColor: colors.text.tertiary,
-                }}
-              />
-              <Ionicons name="lock-closed" size={10} color={colors.value} />
-            </>
+            </View>
           )}
         </View>
       </View>
-
-      <AmountDisplay
-        amount={tx.amount}
-        size="primary"
-        tone={amountTone}
-        showSign
-      />
+      </View>
     </Pressable>
   );
 }

@@ -1,7 +1,19 @@
 /**
- * Moneto typography scale
- * Fraunces (display) · Inter (UI) · JetBrains Mono (números)
- * Cada familia tiene un rol exclusivo. Nunca se cruzan.
+ * Moneto typography — enforced scale.
+ *
+ * Regla estricta (mobile-design.txt): máximo 4 font sizes + 2 weights por screen.
+ *
+ * Sistema reducido:
+ * - 48pt (hero/display) — balance hero, APY hero
+ * - 24pt (h2) — page titles, card hero numbers
+ * - 16pt (body) — body text, primary row labels, CTAs
+ * - 12pt (caption) — eyebrow labels, metadata, timestamps
+ *
+ * Weights:
+ * - 400 (regular) — body, metadata
+ * - 500 (medium) — titles, CTAs, numbers
+ *
+ * Fraunces solo display · Inter para UI · JetBrainsMono solo para amounts
  */
 
 import { TextStyle } from "react-native";
@@ -19,12 +31,12 @@ export const fonts = {
 type TypographyStyle = TextStyle & { fontFamily: string };
 
 export const type = {
-  // Display — Fraunces, editorial voice
+  // 48pt — hero
   wordmark: {
     fontFamily: fonts.displayMedium,
-    fontSize: 40,
-    lineHeight: 40,
-    letterSpacing: -1.2,
+    fontSize: 32,
+    lineHeight: 36,
+    letterSpacing: -1,
   } satisfies TypographyStyle,
 
   heroDisplay: {
@@ -36,52 +48,54 @@ export const type = {
 
   heroDisplayLarge: {
     fontFamily: fonts.displayRegular,
-    fontSize: 56,
-    lineHeight: 58,
-    letterSpacing: -1.4,
+    fontSize: 48,
+    lineHeight: 52,
+    letterSpacing: -1.2,
   } satisfies TypographyStyle,
 
-  // UI — Inter
+  // 24pt — h2
   h2: {
     fontFamily: fonts.sansSemibold,
     fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.36,
+    lineHeight: 28,
+    letterSpacing: -0.4,
   } satisfies TypographyStyle,
 
   h3: {
     fontFamily: fonts.sansMedium,
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 24,
-    letterSpacing: -0.18,
+    letterSpacing: -0.2,
   } satisfies TypographyStyle,
 
+  // 16pt — body
   body: {
     fontFamily: fonts.sansRegular,
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 24,
     letterSpacing: 0,
   } satisfies TypographyStyle,
 
   bodyMedium: {
     fontFamily: fonts.sansMedium,
-    fontSize: 15,
-    lineHeight: 23,
-    letterSpacing: 0,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: -0.1,
   } satisfies TypographyStyle,
 
+  // 12pt — caption
   bodySmall: {
     fontFamily: fonts.sansRegular,
-    fontSize: 13,
-    lineHeight: 19.5,
-    letterSpacing: 0,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.1,
   } satisfies TypographyStyle,
 
   label: {
     fontFamily: fonts.sansMedium,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 1.32,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.8,
     textTransform: "uppercase",
   } satisfies TypographyStyle,
 
@@ -89,42 +103,42 @@ export const type = {
     fontFamily: fonts.sansMedium,
     fontSize: 16,
     lineHeight: 20,
-    letterSpacing: -0.16,
+    letterSpacing: -0.1,
   } satisfies TypographyStyle,
 
-  // Mono — solo números
+  // Mono — siempre para amounts
   balanceHero: {
     fontFamily: fonts.monoMedium,
     fontSize: 48,
-    lineHeight: 48,
-    letterSpacing: -1.2,
+    lineHeight: 52,
+    letterSpacing: -1.4,
   } satisfies TypographyStyle,
 
   balanceHeroLarge: {
     fontFamily: fonts.monoMedium,
-    fontSize: 56,
-    lineHeight: 56,
+    fontSize: 48,
+    lineHeight: 52,
     letterSpacing: -1.4,
   } satisfies TypographyStyle,
 
   amountPrimary: {
     fontFamily: fonts.monoMedium,
     fontSize: 16,
-    lineHeight: 22,
-    letterSpacing: -0.16,
+    lineHeight: 20,
+    letterSpacing: -0.1,
   } satisfies TypographyStyle,
 
   amountSecondary: {
     fontFamily: fonts.monoMedium,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0,
   } satisfies TypographyStyle,
 
   mono: {
     fontFamily: fonts.monoRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0,
   } satisfies TypographyStyle,
 } as const;
