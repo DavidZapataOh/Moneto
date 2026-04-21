@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Moneto",
+    "slug": "moneto",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "moneto",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.moneto.app",
+      "userInterfaceStyle": "automatic",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Moneto uses Face ID to protect your private balance and authorize transactions securely."
+      }
+    },
+    "android": {
+      "package": "com.moneto.app",
+      "userInterfaceStyle": "automatic"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Moneto uses Face ID to protect your private balance."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "splash": {
+      "backgroundColor": "#14100B",
+      "resizeMode": "contain"
+    }
+  }
+}
