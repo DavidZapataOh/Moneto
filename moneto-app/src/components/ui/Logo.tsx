@@ -1,5 +1,4 @@
-import Svg, { Path, Circle } from "react-native-svg";
-import { View } from "react-native";
+import { Image, View } from "react-native";
 import { Text } from "./Text";
 import { useTheme } from "@hooks/useTheme";
 
@@ -8,6 +7,8 @@ interface LogoProps {
   variant?: "mark" | "wordmark" | "full";
   tone?: "brand" | "inverse" | "primary";
 }
+
+const logoSource = require("../../../assets/images/moneto-logo.png");
 
 export function Logo({ size = 40, variant = "mark", tone = "brand" }: LogoProps) {
   const { colors } = useTheme();
@@ -20,20 +21,11 @@ export function Logo({ size = 40, variant = "mark", tone = "brand" }: LogoProps)
         : colors.text.primary;
 
   const Mark = (
-    <Svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-      {/* Círculo exterior (sigilo/seal) */}
-      <Circle cx="20" cy="20" r="18" stroke={color} strokeWidth="1.5" opacity={0.25} />
-      {/* M estilizada que también es dos "monedas apiladas" */}
-      <Path
-        d="M10 26V14L20 22L30 14V26"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Punto central (el núcleo privado) */}
-      <Circle cx="20" cy="22" r="1.5" fill={color} />
-    </Svg>
+    <Image
+      source={logoSource}
+      style={{ width: size, height: size }}
+      resizeMode="contain"
+    />
   );
 
   if (variant === "mark") return Mark;

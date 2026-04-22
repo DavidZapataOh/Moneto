@@ -1,108 +1,157 @@
 import { useEffect } from "react";
-import { View, Dimensions } from "react-native";
+import { View, Image, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withTiming,
-  withSequence,
-  withRepeat,
   Easing,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { Screen } from "@components/ui/Screen";
 import { Text } from "@components/ui/Text";
 import { Button } from "@components/ui/Button";
 import { Logo } from "@components/ui/Logo";
 import { useTheme } from "@hooks/useTheme";
+import { palette } from "@theme/colors";
 
-const { height } = Dimensions.get("window");
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+
+// La imagen ocupa todo el ancho del device
+// Altura proporcional al aspect ratio de la imagen source (asumimos ~1:1.2)
+const HERO_HEIGHT = SCREEN_H * 0.58;
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
-  const logoOpacity = useSharedValue(0);
-  const logoScale = useSharedValue(0.92);
+  const heroOpacity = useSharedValue(0);
+  const heroTranslate = useSharedValue(20);
   const titleOpacity = useSharedValue(0);
   const subOpacity = useSharedValue(0);
   const ctaOpacity = useSharedValue(0);
-  const glowOpacity = useSharedValue(0.4);
 
   useEffect(() => {
-    logoOpacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) });
-    logoScale.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
-    titleOpacity.value = withDelay(280, withTiming(1, { duration: 500 }));
-    subOpacity.value = withDelay(520, withTiming(1, { duration: 500 }));
-    ctaOpacity.value = withDelay(760, withTiming(1, { duration: 400 }));
+    heroOpacity.value = withTiming(1, { duration: 700, easing: Easing.out(Easing.cubic) });
+    heroTranslate.value = withTiming(0, { duration: 700, easing: Easing.out(Easing.cubic) });
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 500 }));
+    subOpacity.value = withDelay(480, withTiming(1, { duration: 500 }));
+    ctaOpacity.value = withDelay(660, withTiming(1, { duration: 400 }));
+  }, [heroOpacity, heroTranslate, titleOpacity, subOpacity, ctaOpacity]);
 
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(0.7, { duration: 2200, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0.3, { duration: 2200, easing: Easing.inOut(Easing.quad) })
-      ),
-      -1,
-      true
-    );
-  }, [logoOpacity, logoScale, titleOpacity, subOpacity, ctaOpacity, glowOpacity]);
-
-  const logoStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ scale: logoScale.value }],
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: heroOpacity.value,
+    transform: [{ translateY: heroTranslate.value }],
   }));
   const titleStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
   const subStyle = useAnimatedStyle(() => ({ opacity: subOpacity.value }));
   const ctaStyle = useAnimatedStyle(() => ({ opacity: ctaOpacity.value }));
-  const glowStyle = useAnimatedStyle(() => ({ opacity: glowOpacity.value }));
+
+  // Color de fondo en ink-900 (lo usa el gradient para disolverse naturalmente)
+  const bgPrimary = isDark ? palette.ink[900] : palette.cream[50];
+  const bgRgbaStart = isDark ? "rgba(20, 16, 11, 0)" : "rgba(251, 247, 239, 0)";
+  const bgRgbaMid = isDark ? "rgba(20, 16, 11, 0.55)" : "rgba(251, 247, 239, 0.55)";
+  const bgRgbaEnd = isDark ? "rgba(20, 16, 11, 1)" : "rgba(251, 247, 239, 1)";
 
   return (
-    <Screen padded>
-      {/* Ambient glow */}
+    <Screen padded={false} edges={["top", "bottom"]} bg="primary">
+      {/* Top wordmark */}
+      <View
+        style={{
+          paddingTop: 12,
+          paddingHorizontal: 20,
+          zIndex: 2,
+        }}
+      >
+        <Text variant="wordmark" style={{ fontSize: 18, letterSpacing: -0.4 }}>
+          Moneto
+        </Text>
+      </View>
+
+      {/* Hero image — full width, gradient disolviéndose al bg en la parte inferior */}
       <Animated.View
-        pointerEvents="none"
         style={[
-          glowStyle,
+          heroStyle,
           {
             position: "absolute",
-            top: height * 0.15,
-            left: -60,
-            right: -60,
-            height: 340,
-            backgroundColor: colors.brand.primary,
-            opacity: 0.15,
-            borderRadius: 300,
-            transform: [{ scaleX: 1.4 }],
+            top: 0,
+            left: 0,
+            right: 0,
+            width: SCREEN_W,
+            height: HERO_HEIGHT,
+            zIndex: 1,
           },
         ]}
-      />
+      >
+        <Image
+          source={require("../../assets/images/onboarding.png")}
+          style={{ width: SCREEN_W, height: HERO_HEIGHT }}
+          resizeMode="cover"
+        />
 
-      <View style={{ flex: 1, justifyContent: "space-between", paddingVertical: 40 }}>
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 32 }}>
-          <Animated.View style={logoStyle}>
-            <Logo size={72} variant="mark" tone="brand" />
+        {/* Gradient de disolución: arranca transparente arriba, se vuelve bg opaco abajo.
+            Efecto "agua": 3 stops para que no sea un corte duro. */}
+        <LinearGradient
+          colors={[bgRgbaStart, bgRgbaMid, bgRgbaEnd]}
+          locations={[0, 0.55, 1]}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: HERO_HEIGHT * 0.55, // la disolución ocupa el 55% inferior de la imagen
+          }}
+        />
+      </Animated.View>
+
+      {/* Contenido inferior — se solapa con la parte disuelta del hero */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "flex-end",
+          paddingHorizontal: 24,
+          paddingBottom: 16,
+          gap: 28,
+          zIndex: 2,
+        }}
+      >
+        <View style={{ gap: 10 }}>
+          <Animated.View style={titleStyle}>
+            <Text
+              variant="heroDisplayLarge"
+              tone="primary"
+              style={{ letterSpacing: -1.5 }}
+            >
+              Tu dinero,{"\n"}a tu manera.
+            </Text>
           </Animated.View>
-
-          <View style={{ alignItems: "center", gap: 12 }}>
-            <Animated.View style={titleStyle}>
-              <Text variant="heroDisplayLarge" tone="primary" style={{ textAlign: "center" }}>
-                Money,{"\n"}privately.
-              </Text>
-            </Animated.View>
-            <Animated.View style={[subStyle, { paddingHorizontal: 24, marginTop: 8 }]}>
-              <Text variant="body" tone="secondary" style={{ textAlign: "center", lineHeight: 24 }}>
-                El neobanco para quienes prefieren{"\n"}no ser vistos.
-              </Text>
-            </Animated.View>
-          </View>
+          <Animated.View style={subStyle}>
+            <Text
+              variant="body"
+              tone="secondary"
+              style={{ lineHeight: 24, maxWidth: 320 }}
+            >
+              Un banco que trabaja para vos, no al revés.
+            </Text>
+          </Animated.View>
         </View>
 
-        <Animated.View style={[ctaStyle, { gap: 12 }]}>
+        <Animated.View style={[ctaStyle, { gap: 10 }]}>
           <Button
             label="Empezar"
             variant="primary"
             size="lg"
             fullWidth
             onPress={() => router.push("/(onboarding)/intro")}
+            rightIcon={
+              <Ionicons
+                name="arrow-forward"
+                size={18}
+                color={colors.text.inverse}
+              />
+            }
           />
           <Button
             label="Ya tengo cuenta"
