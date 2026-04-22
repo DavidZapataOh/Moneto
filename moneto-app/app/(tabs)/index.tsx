@@ -48,7 +48,7 @@ export default function HomeScreen() {
           justifyContent: "space-between",
           height: 44,
           marginTop: 16,
-          marginBottom: 36,
+          marginBottom: 16,
         }}
       >
         <Pressable

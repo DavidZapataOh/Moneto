@@ -82,7 +82,7 @@ export const mockAssets: Asset[] = [
   {
     id: "usd",
     symbol: "USD",
-    name: "Dólares estables",
+    name: "Dólar",
     shortName: "USD",
     category: "stable_usd",
     icon: "usd",

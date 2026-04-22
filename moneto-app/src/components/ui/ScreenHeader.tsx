@@ -10,7 +10,7 @@ interface ScreenHeaderProps {
 
 /**
  * Header consistente. Alineado a borde de screen (no paddingHorizontal extra).
- * Spacing 8-pt grid: 8 top, 24 bottom, gap 4 intra-block.
+ * Spacing 8-pt grid: 16 top (matchea el marginTop del top bar de Saldo), 24 bottom.
  */
 export function ScreenHeader({
   eyebrow,
@@ -21,7 +21,7 @@ export function ScreenHeader({
   return (
     <View
       style={{
-        paddingTop: 8,
+        paddingTop: 16,
         paddingBottom: 24,
         flexDirection: "row",
         alignItems: "flex-start",
