@@ -64,46 +64,24 @@ export function BalanceHero({
 
   return (
     <View style={{ gap: 12 }}>
-      {/* Eyebrow */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text variant="label" tone="tertiary">
-            Saldo total
-          </Text>
-          <Pressable
-            onPress={() => {
-              haptics.tap();
-              onToggleVisibility();
-            }}
-            hitSlop={12}
-          >
-            <Ionicons
-              name={hidden ? "eye-off-outline" : "eye-outline"}
-              size={16}
-              color={colors.text.tertiary}
-            />
-          </Pressable>
-        </View>
-        {isPrivate && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <Ionicons name="lock-closed" size={12} color={colors.value} />
-            <Text variant="label" tone="value">
-              Privado
-            </Text>
-          </View>
-        )}
+      {/* Eyebrow — sin "PRIVADO" (privacidad es promesa invisible, no feature visible) */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Text variant="label" tone="tertiary">
+          Saldo total
+        </Text>
+        <Pressable
+          onPress={() => {
+            haptics.tap();
+            onToggleVisibility();
+          }}
+          hitSlop={12}
+        >
+          <Ionicons
+            name={hidden ? "eye-off-outline" : "eye-outline"}
+            size={16}
+            color={colors.text.tertiary}
+          />
+        </Pressable>
       </View>
 
       {/* Hero number — 48pt fits 8-pt grid */}
@@ -139,11 +117,11 @@ export function BalanceHero({
               <Text
                 style={{
                   fontFamily: fonts.sansMedium,
-                  fontSize: 12,
-                  lineHeight: 16,
+                  fontSize: 18,
+                  lineHeight: 24,
                   color: colors.text.tertiary,
-                  marginLeft: 8,
-                  letterSpacing: 0.4,
+                  marginLeft: 10,
+                  letterSpacing: 0.2,
                 }}
               >
                 USD

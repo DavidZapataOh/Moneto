@@ -44,3 +44,14 @@ export function shortAddress(address: string) {
 export function formatApy(apy: number) {
   return `${(apy * 100).toFixed(2)}%`;
 }
+
+/**
+ * Saludo dinámico según hora local del dispositivo.
+ * Usa Date() que respeta la timezone del device automáticamente.
+ */
+export function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Buenos días";
+  if (hour >= 12 && hour < 19) return "Buenas tardes";
+  return "Buenas noches";
+}

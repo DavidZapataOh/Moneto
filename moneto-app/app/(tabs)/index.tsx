@@ -12,11 +12,13 @@ import { BalanceHero } from "@components/features/BalanceHero";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { YieldChart } from "@components/features/YieldChart";
+import { AssetStrip } from "@components/features/AssetStrip";
 import { useAppStore } from "@stores/useAppStore";
-import { mockYieldHistory } from "@data/mock";
+import { mockYieldHistory, mockAssets } from "@data/mock";
 import { useTheme } from "@hooks/useTheme";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { haptics } from "@hooks/useHaptics";
+import { getGreeting } from "@lib/format";
 
 // Spacing system (8-pt grid):
 // - SCREEN_PADDING: 20 (handled by Screen padded=true)
@@ -38,14 +40,15 @@ export default function HomeScreen() {
 
   return (
     <Screen padded edges={["top"]} scroll>
-      {/* Top bar — altura 44 (tap target mínimo iOS) */}
+      {/* Top bar — altura 44 (tap target mínimo iOS) + respiro del safe area */}
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           height: 44,
-          marginBottom: 32,
+          marginTop: 16,
+          marginBottom: 36,
         }}
       >
         <Pressable
@@ -53,15 +56,17 @@ export default function HomeScreen() {
             haptics.tap();
             router.push("/(tabs)/profile");
           }}
-          style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
           hitSlop={8}
         >
-          <Avatar name={user.name} size="sm" tone="brand" />
-          <View style={{ gap: 2 }}>
-            <Text variant="label" tone="tertiary">
-              Buenos días
-            </Text>
-            <Text variant="bodyMedium">{user.name.split(" ")[0]}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Avatar name={user.name} size="sm" tone="brand" />
+            <View style={{ gap: 2 }}>
+              <Text variant="label" tone="tertiary">
+                {getGreeting()}
+              </Text>
+              <Text variant="bodyMedium">{user.name.split(" ")[0]}</Text>
+            </View>
           </View>
         </Pressable>
 
@@ -96,6 +101,24 @@ export default function HomeScreen() {
         <QuickActions />
       </Animated.View>
 
+      {/* Asset strip — horizontal scroll */}
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(160)}
+        style={{ marginTop: SECTION_GAP }}
+      >
+        <SectionHeader
+          title="Tus activos"
+          action={{
+            label: "Ver todos",
+            onPress: () => {
+              haptics.tap();
+              router.push("/(tabs)/activos");
+            },
+          }}
+        />
+        <AssetStrip assets={mockAssets} />
+      </Animated.View>
+
       {/* Yield module — card clickable */}
       <Animated.View
         entering={FadeInDown.duration(400).delay(200)}
@@ -107,14 +130,14 @@ export default function HomeScreen() {
             label: "Ver detalle",
             onPress: () => {
               haptics.tap();
-              router.push("/(tabs)/yield");
+              router.push("/(tabs)/activos");
             },
           }}
         />
         <Pressable
           onPress={() => {
             haptics.tap();
-            router.push("/(tabs)/yield");
+            router.push("/(tabs)/activos");
           }}
         >
           <Card variant="elevated" padded radius="lg">

@@ -29,7 +29,7 @@ const actions: QuickAction[] = [
   { id: "receive", label: "Recibir", icon: "arrow-down", route: "/receive" },
   { id: "send", label: "Enviar", icon: "arrow-up", route: "/send" },
   { id: "cashout", label: "Retirar", icon: "cash-outline", route: "/send?mode=cashout" },
-  { id: "card", label: "Tarjeta", icon: "card-outline", route: "/(tabs)/card" },
+  { id: "swap", label: "Convertir", icon: "swap-horizontal", route: "/swap" },
 ];
 
 export function QuickActions() {

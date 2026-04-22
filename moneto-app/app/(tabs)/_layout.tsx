@@ -102,12 +102,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="yield"
+        name="activos"
         options={{
-          title: "Rinde",
+          title: "Activos",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "leaf" : "leaf-outline"}
+              name={focused ? "layers" : "layers-outline"}
               size={24}
               color={color}
             />

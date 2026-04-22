@@ -21,6 +21,8 @@ const typeConfig = {
   cashout: { icon: "cash" as const, color: "primary" as const, label: "Retiro" },
   yield: { icon: "leaf" as const, color: "value" as const, label: "Rendimiento" },
   credit: { icon: "git-branch" as const, color: "primary" as const, label: "Crédito" },
+  qr_pay: { icon: "qr-code" as const, color: "primary" as const, label: "Pago QR" },
+  swap: { icon: "swap-horizontal" as const, color: "value" as const, label: "Conversión" },
 };
 
 /**
@@ -162,45 +164,15 @@ export function TransactionRow({
           </View>
         </View>
 
-        {/* BOTTOM LINE: tipo · timestamp (left) + privacy (right) */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
+        {/* BOTTOM LINE: tipo · timestamp (la privacidad es invisible, no se comunica) */}
+        <Text
+          variant="bodySmall"
+          tone="tertiary"
+          numberOfLines={1}
         >
-          <Text
-            variant="bodySmall"
-            tone="tertiary"
-            numberOfLines={1}
-            style={{ flex: 1 }}
-          >
-            {typeLabel}
-            {timeLabel ? "  ·  " + timeLabel : ""}
-          </Text>
-
-          {tx.isPrivate && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                flexShrink: 0,
-              }}
-            >
-              <Ionicons
-                name="lock-closed"
-                size={10}
-                color={colors.text.tertiary}
-              />
-              <Text variant="bodySmall" tone="tertiary">
-                Privado
-              </Text>
-            </View>
-          )}
-        </View>
+          {typeLabel}
+          {timeLabel ? "  ·  " + timeLabel : ""}
+        </Text>
       </View>
       </View>
     </Pressable>
