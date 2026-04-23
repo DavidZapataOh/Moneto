@@ -154,8 +154,10 @@ export default function SendSuccessScreen() {
                 style={{
                   fontFamily: fonts.monoMedium,
                   fontSize: 56,
+                  lineHeight: 68,
                   color: colors.text.primary,
                   letterSpacing: -1.4,
+                  includeFontPadding: false,
                 }}
               >
                 ${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
@@ -179,27 +181,26 @@ export default function SendSuccessScreen() {
             </Text>
           </Animated.View>
 
-          {/* Privacy confirmation */}
-          <Animated.View style={[bodyStyle]}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                borderRadius: 999,
-                backgroundColor: "rgba(200, 148, 80, 0.12)",
-              }}
-            >
-              <Ionicons name="lock-closed" size={12} color={colors.value} />
-              <Text variant="bodySmall" tone="value">
-                {isCashout
-                  ? "Monto privado en chain · COP llegará en ~10 min"
-                  : "Transferencia privada · invisible para observadores"}
-              </Text>
-            </View>
-          </Animated.View>
+          {isCashout && (
+            <Animated.View style={[bodyStyle]}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: "rgba(200, 148, 80, 0.12)",
+                }}
+              >
+                <Ionicons name="time-outline" size={12} color={colors.value} />
+                <Text variant="bodySmall" tone="value">
+                  COP llegará a tu banco en ~10 min
+                </Text>
+              </View>
+            </Animated.View>
+          )}
         </View>
 
         <Animated.View style={[ctaStyle, { gap: 12 }]}>

@@ -32,7 +32,7 @@ export default function CardScreen() {
 
   return (
     <Screen padded edges={["top"]} scroll>
-      <ScreenHeader title="Tarjeta" subtitle="Virtual · privada por default" />
+      <ScreenHeader title="Tarjeta" subtitle="Virtual · Visa" />
 
       {/* Card visual — único accent peak */}
       <Animated.View
@@ -67,7 +67,7 @@ export default function CardScreen() {
           }}
         />
         <Text variant="bodySmall" tone="secondary">
-          {frozen ? "Congelada — no permite pagos" : "Activa — Apple Pay listo"}
+          {frozen ? "Congelada — no permite pagos" : "Activa"}
         </Text>
       </Animated.View>
 

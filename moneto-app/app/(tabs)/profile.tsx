@@ -9,6 +9,7 @@ import { Card } from "@components/ui/Card";
 import { Avatar } from "@components/ui/Avatar";
 import { Divider } from "@components/ui/Divider";
 import { useAppStore } from "@stores/useAppStore";
+import { useThemeStore } from "@stores/useThemeStore";
 import { useTheme } from "@hooks/useTheme";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { haptics } from "@hooks/useHaptics";
@@ -27,10 +28,17 @@ type RowItem = {
   badgeTone?: "brand" | "success";
 };
 
+const THEME_LABEL: Record<"system" | "light" | "dark", string> = {
+  system: "Automático",
+  light: "Claro",
+  dark: "Oscuro",
+};
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAppStore((s) => s.user);
+  const themePreference = useThemeStore((s) => s.preference);
   const bottomSpace = useTabBarSpace();
 
   const sections: Array<{ header: string; items: RowItem[] }> = [
@@ -97,8 +105,8 @@ export default function ProfileScreen() {
           icon: "contrast",
           label: "Apariencia",
           sub: "Tema",
-          meta: "Automático",
-          route: null,
+          meta: THEME_LABEL[themePreference],
+          route: "/appearance",
         },
         {
           icon: "notifications",
@@ -197,12 +205,9 @@ export default function ProfileScreen() {
         </View>
       </Pressable>
 
-      <View style={{ alignItems: "center", gap: 4, marginTop: 16 }}>
+      <View style={{ alignItems: "center", marginTop: 16 }}>
         <Text variant="bodySmall" tone="tertiary">
           Moneto v0.1.0
-        </Text>
-        <Text variant="label" tone="tertiary">
-          Built on Solana
         </Text>
       </View>
 
@@ -327,7 +332,7 @@ function SettingRow({
           )}
         </View>
 
-        {/* BOTTOM LINE: sub (izq) + meta (der) */}
+        {/* BOTTOM LINE: sub (izq) + meta + chevron (der, inline y alineados) */}
         <View
           style={{
             flexDirection: "row",
@@ -344,24 +349,31 @@ function SettingRow({
           >
             {item.sub}
           </Text>
-          {item.meta && (
-            <Text
-              variant="bodySmall"
-              tone="secondary"
-              numberOfLines={1}
-              style={{ flexShrink: 0 }}
-            >
-              {item.meta}
-            </Text>
-          )}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+              flexShrink: 0,
+            }}
+          >
+            {item.meta && (
+              <Text
+                variant="bodySmall"
+                tone="secondary"
+                numberOfLines={1}
+              >
+                {item.meta}
+              </Text>
+            )}
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.text.tertiary}
+            />
+          </View>
         </View>
       </View>
-
-      <Ionicons
-        name="chevron-forward"
-        size={16}
-        color={colors.text.tertiary}
-      />
       </View>
     </Pressable>
   );

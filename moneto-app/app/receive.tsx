@@ -94,13 +94,6 @@ export default function ReceiveScreen() {
             ecl="H"
           />
         </View>
-
-        <Badge
-          label="Recepción privada"
-          tone="value"
-          size="md"
-          icon={<Ionicons name="lock-closed" size={10} color={colors.value} />}
-        />
       </Animated.View>
 
       {/* Payroll link */}
@@ -186,14 +179,14 @@ export default function ReceiveScreen() {
           <Divider />
           <StepRow
             n={2}
-            title="Se shield automáticamente"
-            sub="Balance encriptado via Umbra · 0 visibles en chain"
+            title="Empieza a rendir 6.2% APY"
+            sub="Sin mover nada. Ruteado al mejor vault privado"
           />
           <Divider />
           <StepRow
             n={3}
-            title="Empieza a rendir 6.2% APY"
-            sub="Sin mover nada. Ruteado al mejor vault privado"
+            title="Gastás cuando quieras"
+            sub="Tarjeta Visa, QR local o retiro al banco"
           />
         </Card>
       </Animated.View>

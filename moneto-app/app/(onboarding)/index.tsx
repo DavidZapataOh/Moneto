@@ -158,7 +158,7 @@ export default function WelcomeScreen() {
             variant="ghost"
             size="md"
             fullWidth
-            onPress={() => router.push("/(onboarding)/auth")}
+            onPress={() => router.push("/(onboarding)/auth?mode=login")}
           />
         </Animated.View>
       </View>

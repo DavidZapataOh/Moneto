@@ -86,7 +86,7 @@ export default function IntroCarousel() {
   const goNext = () => {
     if (index === slides.length - 1) {
       haptics.medium();
-      router.push("/(onboarding)/auth");
+      router.push("/(onboarding)/auth?mode=signup");
       return;
     }
     haptics.tap();
@@ -135,7 +135,7 @@ export default function IntroCarousel() {
         <Pressable
           onPress={() => {
             haptics.tap();
-            router.push("/(onboarding)/auth");
+            router.push("/(onboarding)/auth?mode=signup");
           }}
           hitSlop={16}
         >

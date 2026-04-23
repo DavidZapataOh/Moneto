@@ -119,9 +119,11 @@ export default function SendScreen() {
             <Text
               style={{
                 fontFamily: fonts.monoMedium,
-                fontSize: 44,
+                fontSize: 52,
+                lineHeight: 64,
                 color: colors.text.tertiary,
-                letterSpacing: -1,
+                letterSpacing: -1.2,
+                includeFontPadding: false,
               }}
             >
               $
@@ -139,10 +141,12 @@ export default function SendScreen() {
                 flex: 1,
                 fontFamily: fonts.monoMedium,
                 fontSize: 52,
+                lineHeight: 64,
                 color: colors.text.primary,
                 letterSpacing: -1.2,
                 padding: 0,
                 margin: 0,
+                includeFontPadding: false,
               }}
               autoFocus
             />
@@ -319,27 +323,7 @@ export default function SendScreen() {
         </Animated.View>
       )}
 
-      {/* Privacy banner */}
-      <Animated.View
-        entering={FadeIn.duration(400).delay(80)}
-        style={{ marginTop: "auto", marginBottom: 14 }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name="lock-closed" size={12} color={colors.value} />
-          <Text variant="bodySmall" tone="value">
-            {mode === "cashout"
-              ? "El monto queda privado en chain"
-              : "Transferencia P2P privada · gratis"}
-          </Text>
-        </View>
-      </Animated.View>
+      <View style={{ marginTop: "auto" }} />
 
       <Button
         label={mode === "cashout" ? "Retirar" : "Enviar"}

@@ -84,6 +84,10 @@ export default function RootLayout() {
             name="swap"
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
+          <Stack.Screen
+            name="appearance"
+            options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
