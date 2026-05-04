@@ -12,6 +12,12 @@ import { logger as honoLogger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 
 import { corsMiddleware } from "./middleware/cors";
+import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
+
+interface KVNamespaceBinding {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void>;
+}
 
 type Bindings = {
   ENVIRONMENT?: string;
@@ -19,6 +25,8 @@ type Bindings = {
   SENTRY_DSN?: string;
   AXIOM_TOKEN?: string;
   AXIOM_DATASET?: string;
+  /** KV namespace para rate limit counters — opcional, fallback in-memory. */
+  RATE_LIMITS?: KVNamespaceBinding;
 };
 
 const SERVICE_NAME = "moneto-api";
@@ -105,13 +113,20 @@ app.use("*", async (c, next) => {
   return middleware(c, next);
 });
 
-app.get("/health", (c) =>
+// `/health` con rate limit ultra-tolerante (uptime monitors pegan cada 30s).
+app.get("/health", rateLimit(RATE_LIMIT_PRESETS.health), (c) =>
   c.json({
     status: "ok",
     service: SERVICE_NAME,
     env: c.get("env"),
     ts: new Date().toISOString(),
   }),
+);
+
+// Stub de auth — ejemplo de cómo aplicar rate limit agresivo a endpoints
+// sensibles. Los handlers reales llegan en Sprint 1.
+app.post("/auth/login", rateLimit(RATE_LIMIT_PRESETS.auth), (c) =>
+  c.json({ error: "not_implemented", sprint: "1.04" }, 501),
 );
 
 app.notFound((c) => c.json({ error: "not_found", path: c.req.path }, 404));

@@ -13,12 +13,47 @@
       "userInterfaceStyle": "automatic",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSFaceIDUsageDescription": "Moneto uses Face ID to protect your private balance and authorize transactions securely."
+        "NSFaceIDUsageDescription": "Moneto usa Face ID para proteger tu saldo privado y autorizar transacciones de forma segura.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": false,
+          "NSAllowsArbitraryLoadsForMedia": false,
+          "NSAllowsArbitraryLoadsInWebContent": false,
+          "NSPinnedDomains": {
+            "moneto.xyz": {
+              "NSIncludesSubdomains": true,
+              "NSPinnedCAIdentities": []
+            }
+          }
+        },
+        "NSCameraUsageDescription": "Moneto usa la cámara solo para verificación KYC (selfie + documento). Nunca se accede sin tu permiso explícito.",
+        "NSPhotoLibraryUsageDescription": "Moneto puede pedir una foto de tu documento para verificación KYC. Nada se guarda localmente."
       }
     },
     "android": {
       "package": "com.moneto.app",
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_CONTACTS",
+        "android.permission.READ_CALENDAR"
+      ]
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#14100B"
+    },
+    "androidNavigationBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#14100B"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +66,28 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Moneto uses Face ID to protect your private balance."
+          "faceIDPermission": "Moneto usa Face ID para proteger tu saldo privado."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": false,
+            "networkSecurityConfig": {
+              "cleartextTrafficPermitted": false,
+              "domain-config": [
+                {
+                  "domain": "moneto.xyz",
+                  "includeSubdomains": true,
+                  "cleartextTrafficPermitted": false
+                }
+              ]
+            }
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
         }
       ]
     ],

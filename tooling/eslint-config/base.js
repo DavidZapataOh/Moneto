@@ -15,6 +15,7 @@ module.exports = {
     "plugin:@typescript-eslint/recommended",
     "plugin:import/recommended",
     "plugin:import/typescript",
+    "./security.js",
     "prettier",
   ],
   settings: {
@@ -62,6 +63,10 @@ module.exports = {
     "coverage",
     "*.config.js",
     "*.config.ts",
+    "*.config.cjs",
+    "*.config.mjs",
+    ".eslintrc.cjs",
+    ".eslintrc.js",
     "babel.config.js",
     "metro.config.js",
   ],

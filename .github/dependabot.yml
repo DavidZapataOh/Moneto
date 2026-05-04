@@ -1,0 +1,116 @@
+version: 2
+
+# Dependabot config — semanal grouped updates + immediate security patches.
+#
+# Reglas:
+# - npm: scan recursivo via `pnpm` workspace (Dependabot lo entiende nativo).
+#   Grouping por ecosystem para evitar PR storm.
+# - github-actions: pin SHAs sería ideal pero overhead alto; usamos versiones
+#   semver y trust en mantenedores (actions/* y aquasecurity/*).
+# - Security updates siempre se abren immediate, sin esperar la cadencia.
+
+updates:
+  # ── npm (workspace) ──────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 8
+    reviewers:
+      - "DavidZapataOh"
+    labels:
+      - "deps"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      # Tooling — sale junto.
+      tooling:
+        patterns:
+          - "@typescript-eslint/*"
+          - "eslint*"
+          - "prettier"
+          - "turbo"
+          - "typescript"
+          - "@commitlint/*"
+          - "husky"
+          - "lint-staged"
+        update-types:
+          - "minor"
+          - "patch"
+      # Sentry — mobile + workers + utils suelen actualizar juntos.
+      sentry:
+        patterns:
+          - "@sentry/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Expo + React Native — agrupar para evitar mismatch de versions.
+      expo:
+        patterns:
+          - "expo"
+          - "expo-*"
+          - "@expo/*"
+          - "@expo-google-fonts/*"
+          - "react-native"
+          - "react-native-*"
+          - "nativewind"
+        update-types:
+          - "patch"
+      # React types juntos (mobile y web).
+      react-types:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "patch"
+      # Hono + Cloudflare Workers ecosystem.
+      cloudflare:
+        patterns:
+          - "hono"
+          - "wrangler"
+          - "@cloudflare/*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Next.js major bumps requieren handling manual (App Router APIs cambian).
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Bogota"
+    open-pull-requests-limit: 4
+    reviewers:
+      - "DavidZapataOh"
+    labels:
+      - "deps"
+      - "ci"
+      - "automated"
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      ci-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
