@@ -1,25 +1,38 @@
-import { View } from "react-native";
+import { forwardRef } from "react";
+import { Pressable, View } from "react-native";
+import { hitSlop } from "@moneto/theme";
 import { Text } from "./Text";
 
-interface ScreenHeaderProps {
+export interface ScreenHeaderProps {
+  /** Eyebrow opcional (label uppercased above title). */
   eyebrow?: string;
+  /** Título principal (variant `h2`). */
   title: string;
+  /** Subtítulo opcional (variant `bodySmall`, tone `secondary`). */
   subtitle?: string;
+  /** Slot trailing alineado a la derecha (icono/acción). */
   trailing?: React.ReactNode;
+  /** testID para E2E. */
+  testID?: string;
 }
 
 /**
- * Header consistente. Alineado a borde de screen (no paddingHorizontal extra).
- * Spacing 8-pt grid: 16 top (matchea el marginTop del top bar de Saldo), 24 bottom.
+ * Header consistente para top-level screens. Alineado al borde de la screen
+ * (no extra padding horizontal — `<Screen padded>` ya lo aplica).
+ *
+ * Spacing 8-pt grid: 16 top, 24 bottom.
+ *
+ * @example
+ *   <ScreenHeader eyebrow="Privacidad" title="Tus permisos" trailing={<IconButton ... />} />
  */
-export function ScreenHeader({
-  eyebrow,
-  title,
-  subtitle,
-  trailing,
-}: ScreenHeaderProps) {
+export const ScreenHeader = forwardRef<View, ScreenHeaderProps>(function ScreenHeader(
+  { eyebrow, title, subtitle, trailing, testID },
+  ref,
+) {
   return (
     <View
+      ref={ref}
+      testID={testID}
       style={{
         paddingTop: 16,
         paddingBottom: 24,
@@ -30,61 +43,80 @@ export function ScreenHeader({
       }}
     >
       <View style={{ flex: 1, gap: 4 }}>
-        {eyebrow && (
+        {eyebrow ? (
           <Text variant="label" tone="tertiary">
             {eyebrow}
           </Text>
-        )}
-        <Text variant="h2" tone="primary">
+        ) : null}
+        <Text variant="h2" tone="primary" accessibilityRole="header">
           {title}
         </Text>
-        {subtitle && (
+        {subtitle ? (
           <Text variant="bodySmall" tone="secondary">
             {subtitle}
           </Text>
-        )}
+        ) : null}
       </View>
       {trailing}
     </View>
   );
-}
+});
 
-/**
- * Section header — usa fuera de cards, alineado a card content-start.
- * Section labels deben alinearse al borde izquierdo de la card siguiente (no 4pt mágico).
- */
-interface SectionHeaderProps {
+ScreenHeader.displayName = "ScreenHeader";
+
+export interface SectionHeaderProps {
+  /** Texto label uppercased. */
   title: string;
+  /** Action button opcional a la derecha. */
   action?: {
     label: string;
     onPress: () => void;
+    testID?: string;
   };
+  /** testID para E2E. */
+  testID?: string;
 }
 
-export function SectionHeader({ title, action }: SectionHeaderProps) {
+/**
+ * Section header dentro de una screen — más compacto que `<ScreenHeader>`.
+ * Alineado al borde izquierdo de la card siguiente (no 4pt mágico).
+ *
+ * @example
+ *   <SectionHeader title="Movimientos" action={{ label: "Ver todo", onPress }} />
+ */
+export const SectionHeader = forwardRef<View, SectionHeaderProps>(function SectionHeader(
+  { title, action, testID },
+  ref,
+) {
   return (
     <View
+      ref={ref}
+      testID={testID}
       style={{
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         marginBottom: 8,
-        paddingHorizontal: 0, // alineado al borde de screen (no más 4pt inconsistencia)
       }}
     >
-      <Text variant="label" tone="tertiary">
+      <Text variant="label" tone="tertiary" accessibilityRole="header">
         {title}
       </Text>
-      {action && (
-        <Text
-          variant="bodySmall"
-          tone="brand"
+      {action ? (
+        <Pressable
           onPress={action.onPress}
-          suppressHighlighting
+          hitSlop={hitSlop.medium}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
+          testID={action.testID}
         >
-          {action.label}
-        </Text>
-      )}
+          <Text variant="bodySmall" tone="brand">
+            {action.label}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
-}
+});
+
+SectionHeader.displayName = "SectionHeader";

@@ -1,34 +1,54 @@
+import { forwardRef } from "react";
 import { Platform, View, type ViewProps } from "react-native";
+import { radius as radiusTokens, type RadiusToken } from "@moneto/theme";
 import { useTheme } from "../hooks/useTheme";
-import { radius } from "@moneto/theme";
 
-type Variant = "elevated" | "outlined" | "sunken" | "brand";
+export type CardVariant = "elevated" | "outlined" | "sunken" | "brand";
 
-interface CardProps extends ViewProps {
-  variant?: Variant;
+export interface CardProps extends ViewProps {
+  /** Visual variant. Default `elevated`. */
+  variant?: CardVariant;
+  /** Aplica padding interno. Default `true`. */
   padded?: boolean;
+  /** Padding interno cuando `padded`. Default `16`. */
   padding?: number;
-  radius?: keyof typeof radius;
+  /** Radius token. Default `lg`. */
+  radius?: RadiusToken;
 }
 
 /**
- * Base card. Aplica squircle (borderCurve continuous) en iOS por default
- * para corners Apple-grade en lugar de circular genérico.
+ * Surface base. Squircle continuo en iOS (`borderCurve: "continuous"`) para
+ * corners Apple-grade.
  *
- * Spacing rules (8-point grid):
- * - Default radius: 20 (lg)
- * - Default padding: 16 (cuando padded=true)
- * - Todas las cards de la misma screen usan el MISMO radius y padding
+ * Reglas de uso (mobile-design.txt):
+ * - Una misma screen usa SIEMPRE el mismo `radius` y `padding`.
+ * - Default radius `lg` (20pt) para superficies grandes; `md` (14pt) para chips.
+ * - `elevated` y `sunken` para crear profundidad sin recurrir a sombras
+ *   pesadas; usar `<Card>` con `getShadow("md")` solo cuando la elevación
+ *   es semánticamente importante (modales, sheets).
+ *
+ * @example
+ *   <Card variant="elevated" padded>
+ *     <Text variant="h3">Saldo</Text>
+ *   </Card>
+ *
+ *   <Card variant="outlined" radius="md" padded={false}>
+ *     <ListItem ... />
+ *   </Card>
  */
-export function Card({
-  variant = "elevated",
-  padded = true,
-  padding = 16,
-  radius: r = "lg",
-  style,
-  children,
-  ...rest
-}: CardProps) {
+export const Card = forwardRef<View, CardProps>(function Card(
+  {
+    variant = "elevated",
+    padded = true,
+    padding = 16,
+    radius: r = "lg",
+    style,
+    children,
+    testID,
+    ...rest
+  },
+  ref,
+) {
   const { colors } = useTheme();
 
   const variantStyle = (() => {
@@ -46,14 +66,15 @@ export function Card({
 
   return (
     <View
+      ref={ref}
+      testID={testID}
       style={[
         {
           backgroundColor: variantStyle.bg,
           borderColor: variantStyle.border,
           borderWidth: variantStyle.borderWidth,
-          borderRadius: radius[r],
+          borderRadius: radiusTokens[r],
           padding: padded ? padding : 0,
-          // iOS squircle — smoother continuous corners
           ...(Platform.OS === "ios" && { borderCurve: "continuous" as const }),
           overflow: "hidden",
         },
@@ -64,4 +85,6 @@ export function Card({
       {children}
     </View>
   );
-}
+});
+
+Card.displayName = "Card";

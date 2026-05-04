@@ -1,5 +1,9 @@
 /**
- * Moneto spacing scale — 4pt grid
+ * Moneto spacing scale.
+ *
+ * Base 4pt grid (con `0.5`/`1.5`/`2.5` para nudges sub-grid). Usar siempre
+ * keys de esta escala — nunca números arbitrarios — para mantener ritmo
+ * visual coherente entre screens.
  */
 
 export const space = {
@@ -25,19 +29,18 @@ export const space = {
   24: 96,
 } as const;
 
-export const radius = {
-  none: 0,
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 20,
-  xl: 28,
-  "2xl": 36,
-  full: 9999,
-} as const;
+export type SpaceToken = keyof typeof space;
 
+/**
+ * Hit slop scale para Pressables pequeños.
+ *
+ * Regla a11y (WCAG / iOS HIG): touch target real ≥44pt. Si el visual es
+ * menor, expandimos con hitSlop para cumplir sin alterar el layout.
+ */
 export const hitSlop = {
   small: { top: 8, bottom: 8, left: 8, right: 8 },
   medium: { top: 12, bottom: 12, left: 12, right: 12 },
   large: { top: 16, bottom: 16, left: 16, right: 16 },
 } as const;
+
+export type HitSlopToken = keyof typeof hitSlop;

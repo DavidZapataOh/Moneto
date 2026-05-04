@@ -9,6 +9,11 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "src",
+    "assets",
+    "README.md"
+  ],
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit"

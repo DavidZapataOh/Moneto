@@ -7,16 +7,19 @@ import Animated, {
   FadeIn,
   LinearTransition,
 } from "react-native-reanimated";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Button } from "@moneto/ui";
-import { IconButton } from "@moneto/ui";
-import { Avatar } from "@moneto/ui";
-import { Badge } from "@moneto/ui";
+import {
+  Screen,
+  Text,
+  Card,
+  Button,
+  IconButton,
+  Avatar,
+  Badge,
+  Input,
+  useTheme,
+  haptics,
+} from "@moneto/ui";
 import { useAppStore } from "@stores/useAppStore";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
 import { fonts } from "@moneto/theme";
 import type { User } from "@data/mock";
 
@@ -83,7 +86,7 @@ export default function SendScreen() {
           variant="filled"
           size="sm"
           onPress={() => router.back()}
-          label="Cerrar"
+          accessibilityLabel="Cerrar"
         />
       </View>
 
@@ -189,31 +192,15 @@ export default function SendScreen() {
 
           {!selected ? (
             <Animated.View layout={LinearTransition}>
-              <Card variant="outlined" padded={false} radius="md">
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingHorizontal: 14,
-                    gap: 10,
-                  }}
-                >
+              <Input
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscá por nombre o @usuario"
+                leftSlot={
                   <Ionicons name="search" size={16} color={colors.text.tertiary} />
-                  <TextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder="Buscá por nombre o @usuario"
-                    placeholderTextColor={colors.text.tertiary}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 14,
-                      fontFamily: fonts.sansRegular,
-                      fontSize: 15,
-                      color: colors.text.primary,
-                    }}
-                  />
-                </View>
-              </Card>
+                }
+                accessibilityLabel="Buscar contacto"
+              />
               <View style={{ gap: 2, marginTop: 8 }}>
                 {filtered.map((c) => (
                   <Pressable
@@ -270,21 +257,12 @@ export default function SendScreen() {
                 </View>
               </Card>
 
-              <TextInput
+              <Input
                 value={note}
                 onChangeText={setNote}
                 placeholder="Agregar nota (opcional)"
-                placeholderTextColor={colors.text.tertiary}
-                style={{
-                  marginTop: 10,
-                  padding: 14,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: colors.border.subtle,
-                  fontFamily: fonts.sansRegular,
-                  fontSize: 14,
-                  color: colors.text.primary,
-                }}
+                accessibilityLabel="Nota para el destinatario"
+                containerStyle={{ marginTop: 10 }}
               />
             </Animated.View>
           )}

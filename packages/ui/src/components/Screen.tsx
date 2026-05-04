@@ -1,32 +1,65 @@
-import { View, type ViewProps, ScrollView, type ScrollViewProps, StatusBar, Platform } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { forwardRef } from "react";
+import {
+  View,
+  type ViewProps,
+  ScrollView,
+  type ScrollViewProps,
+  StatusBar,
+  Platform,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
 import { useTheme } from "../hooks/useTheme";
 
-interface ScreenProps extends ViewProps {
+export type ScreenBg = "primary" | "elevated" | "sunken";
+
+export interface ScreenProps extends ViewProps {
+  /** Wrap el contenido en `<ScrollView>`. Default `false`. */
   scroll?: boolean;
+  /** Props pasadas al `<ScrollView>` interno (solo si `scroll`). */
   scrollProps?: ScrollViewProps;
+  /** Aplica `paddingHorizontal: 20`. Default `true`. */
   padded?: boolean;
-  edges?: ("top" | "bottom" | "left" | "right")[];
-  bg?: "primary" | "elevated" | "sunken";
+  /** Edges donde aplicar safe area. Default `["top", "left", "right"]`. */
+  edges?: Edge[];
+  /** Background semantic. Default `primary`. */
+  bg?: ScreenBg;
 }
 
 /**
  * Top-level screen wrapper.
- * - Aplica safe area insets
- * - Respeta tema dark/light
- * - Optional scroll
- * - No usa pure white/black — siempre tokens del sistema
+ *
+ * - Safe area insets aplicados via `react-native-safe-area-context`.
+ * - StatusBar style tracked al modo (Android setea bg color directo).
+ * - Theme background — nunca puro blanco/negro.
+ * - Optional `scroll` con `paddingBottom` que respeta `insets.bottom`.
+ *
+ * Convención: TODA pantalla top-level del app va wrapped en `<Screen>`.
+ * Sub-views (modales, sheets) usan `<Card>` directamente.
+ *
+ * @example
+ *   <Screen scroll>
+ *     <Text variant="h2">Saldo</Text>
+ *     ...
+ *   </Screen>
+ *
+ *   <Screen padded={false} edges={["top", "bottom"]}>
+ *     <FullBleedHero />
+ *   </Screen>
  */
-export function Screen({
-  children,
-  scroll = false,
-  scrollProps,
-  padded = true,
-  edges = ["top", "left", "right"],
-  bg = "primary",
-  style,
-  ...rest
-}: ScreenProps) {
+export const Screen = forwardRef<View, ScreenProps>(function Screen(
+  {
+    children,
+    scroll = false,
+    scrollProps,
+    padded = true,
+    edges = ["top", "left", "right"],
+    bg = "primary",
+    style,
+    testID,
+    ...rest
+  },
+  ref,
+) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -34,6 +67,8 @@ export function Screen({
 
   const content = (
     <View
+      ref={ref}
+      testID={testID}
       style={[
         {
           flex: 1,
@@ -49,10 +84,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView
-      edges={edges}
-      style={{ flex: 1, backgroundColor: bgColor }}
-    >
+    <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: bgColor }}>
       {Platform.OS === "android" && (
         <StatusBar
           backgroundColor={bgColor}
@@ -73,4 +105,6 @@ export function Screen({
       )}
     </SafeAreaView>
   );
-}
+});
+
+Screen.displayName = "Screen";

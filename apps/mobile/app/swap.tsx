@@ -31,7 +31,7 @@ export default function SwapScreen() {
           variant="filled"
           size="sm"
           onPress={() => router.back()}
-          label="Cerrar"
+          accessibilityLabel="Cerrar"
         />
       </View>
 

@@ -57,7 +57,7 @@ export default function ReceiveScreen() {
           variant="filled"
           size="sm"
           onPress={() => router.back()}
-          label="Cerrar"
+          accessibilityLabel="Cerrar"
         />
       </View>
 

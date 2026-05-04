@@ -6,28 +6,56 @@ import Animated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
+import { radius, springs, durations } from "@moneto/theme";
 import { Text } from "./Text";
 import { useTheme } from "../hooks/useTheme";
-import { haptics } from "../hooks/useHaptics";
-import { radius } from "@moneto/theme";
+import { haptics, type HapticPattern } from "../hooks/useHaptics";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
-type Size = "sm" | "md" | "lg";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
 
-interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
-  variant?: Variant;
-  size?: Size;
+export interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
+  /** Visual variant. Default `primary`. */
+  variant?: ButtonVariant;
+  /** Tamaño vertical + radius. Default `md`. */
+  size?: ButtonSize;
+  /** Texto principal. Mantener corto (≤2 palabras idealmente). */
   label: string;
+  /** Icono delante del label (opcional). */
   leftIcon?: React.ReactNode;
+  /** Icono detrás del label (opcional). */
   rightIcon?: React.ReactNode;
+  /** Reemplaza el label con spinner; bloquea onPress. */
   loading?: boolean;
+  /** Bloquea onPress + atenúa visual. */
   disabled?: boolean;
+  /** Stretch al ancho del padre. */
   fullWidth?: boolean;
+  /** Patrón haptic en press. Default `tap`. `null` para desactivar. */
+  haptic?: HapticPattern | null;
+  /** Handler de press. */
   onPress?: () => void;
 }
 
+const SIZE_MAP = {
+  sm: { py: 10, px: 14, r: radius.md, iconGap: 6 },
+  md: { py: 14, px: 18, r: radius.md, iconGap: 8 },
+  lg: { py: 18, px: 22, r: radius.lg, iconGap: 10 },
+} as const;
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+/**
+ * Primary action button. Animated press + haptic + a11y por default.
+ *
+ * `disabled || loading` previenen onPress. `accessibilityRole="button"` y
+ * `accessibilityState` se setean automáticamente — no hace falta pasarlos.
+ *
+ * @example
+ *   <Button label="Continuar" onPress={handle} fullWidth />
+ *   <Button label="Cancelar" variant="ghost" onPress={onCancel} />
+ *   <Button label="Eliminar" variant="danger" haptic="heavy" onPress={onDelete} />
+ */
 export const Button = forwardRef<View, ButtonProps>(function Button(
   {
     variant = "primary",
@@ -38,41 +66,39 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     loading = false,
     disabled = false,
     fullWidth = false,
+    haptic = "tap",
     onPress,
+    accessibilityLabel,
+    accessibilityHint,
+    testID,
     ...rest
   },
-  ref
+  ref,
 ) {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
   const onPressIn = useCallback(() => {
-    scale.value = withSpring(0.97, { damping: 18, stiffness: 300 });
-    opacity.value = withTiming(0.85, { duration: 80 });
+    scale.value = withSpring(0.97, springs.tap);
+    opacity.value = withTiming(0.85, { duration: durations.instant });
   }, [scale, opacity]);
 
   const onPressOut = useCallback(() => {
-    scale.value = withSpring(1, { damping: 18, stiffness: 300 });
-    opacity.value = withTiming(1, { duration: 120 });
+    scale.value = withSpring(1, springs.tap);
+    opacity.value = withTiming(1, { duration: durations.fast });
   }, [scale, opacity]);
 
   const handlePress = useCallback(() => {
     if (disabled || loading) return;
-    haptics.tap();
+    if (haptic) haptics[haptic]();
     onPress?.();
-  }, [disabled, loading, onPress]);
+  }, [disabled, loading, haptic, onPress]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
-
-  const sizeMap = {
-    sm: { py: 10, px: 14, r: radius.md, iconGap: 6 },
-    md: { py: 14, px: 18, r: radius.md, iconGap: 8 },
-    lg: { py: 18, px: 22, r: radius.lg, iconGap: 10 },
-  } as const;
 
   const variantStyle = (() => {
     switch (variant) {
@@ -103,17 +129,20 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     }
   })();
 
-  const s = sizeMap[size];
+  const s = SIZE_MAP[size];
 
   return (
     <AnimatedPressable
-      ref={ref as any}
+      ref={ref as never}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
       disabled={disabled || loading}
       onPress={handlePress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
+      testID={testID}
       style={[
         animatedStyle,
         {
@@ -124,6 +153,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           paddingVertical: s.py,
           paddingHorizontal: s.px,
           alignSelf: fullWidth ? "stretch" : "flex-start",
+          minHeight: 44,
+          justifyContent: "center",
         },
       ]}
       {...rest}
@@ -151,3 +182,5 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
     </AnimatedPressable>
   );
 });
+
+Button.displayName = "Button";
