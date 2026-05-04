@@ -1,0 +1,5 @@
+{
+  "extends": "@moneto/tsconfig/workers.json",
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", ".wrangler"]
+}

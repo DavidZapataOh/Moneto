@@ -1,0 +1,26 @@
+{
+  "name": "moneto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Moneto — privacy-first neobank for LATAM remote workers, built on Solana.",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules .turbo",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yml,yaml}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yml,yaml}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "turbo": "^2.3.3",
+    "typescript": "~5.9.2"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

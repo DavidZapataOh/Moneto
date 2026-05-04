@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Expo (React Native)",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "lib": ["DOM", "ES2022"],
+    "jsx": "react-native",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "noEmit": true,
+    "types": ["expo", "node"]
+  },
+  "exclude": ["node_modules", ".expo", "babel.config.js", "metro.config.js"]
+}

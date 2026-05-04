@@ -1,0 +1,31 @@
+{
+  "name": "@moneto/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "lint": "eslint . --ext .ts --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'tests TBD in Sprint 8' && exit 0",
+    "clean": "rm -rf dist .wrangler node_modules"
+  },
+  "dependencies": {
+    "@moneto/config": "workspace:*",
+    "@moneto/types": "workspace:*",
+    "@moneto/utils": "workspace:*",
+    "hono": "^4.6.13",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@moneto/eslint-config": "workspace:*",
+    "@moneto/tsconfig": "workspace:*",
+    "eslint": "^8.57.1",
+    "typescript": "~5.9.2",
+    "wrangler": "^3.95.0"
+  }
+}

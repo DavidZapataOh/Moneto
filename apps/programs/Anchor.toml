@@ -1,0 +1,20 @@
+[toolchain]
+anchor_version = "0.30.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+# Programs IDs are populated as they're scaffolded in Sprint 5+.
+# moneto_recovery = "RecoveryProgramId11111111111111111111111111"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "echo 'Anchor tests TBD in Sprint 5'"

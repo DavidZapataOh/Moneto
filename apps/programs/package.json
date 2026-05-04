@@ -1,0 +1,13 @@
+{
+  "name": "@moneto/programs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "anchor build",
+    "deploy": "anchor deploy",
+    "test": "anchor test",
+    "lint": "echo 'Rust formatting via `cargo fmt`' && exit 0",
+    "typecheck": "echo 'No TS in this workspace' && exit 0",
+    "clean": "anchor clean && rm -rf target"
+  }
+}
