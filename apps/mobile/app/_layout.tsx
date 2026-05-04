@@ -15,9 +15,15 @@ import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { bootObservability } from "@/lib/observability";
 import { useThemeStore } from "@stores/useThemeStore";
 
 import "../global.css";
+
+// Boot observability ANTES de cualquier render — Sentry necesita estar
+// arriba para capturar crashes durante mount, PostHog para events de
+// app_opened. No-op si los tokens públicos no están set.
+bootObservability();
 
 SplashScreen.preventAutoHideAsync();
 

@@ -1,0 +1,53 @@
+{
+  "name": "@moneto/observability",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./scrub": "./src/scrub.ts",
+    "./events": "./src/events.ts",
+    "./sentry": "./src/sentry.ts",
+    "./axiom": "./src/axiom.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@moneto/config": "workspace:*",
+    "@moneto/utils": "workspace:*"
+  },
+  "peerDependencies": {
+    "@axiomhq/js": "*",
+    "@sentry/cloudflare": "*",
+    "@sentry/react-native": "*",
+    "posthog-react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "@axiomhq/js": {
+      "optional": true
+    },
+    "@sentry/cloudflare": {
+      "optional": true
+    },
+    "@sentry/react-native": {
+      "optional": true
+    },
+    "posthog-react-native": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@moneto/eslint-config": "workspace:*",
+    "@moneto/tsconfig": "workspace:*",
+    "eslint": "^8.57.1",
+    "typescript": "~5.9.2"
+  }
+}
