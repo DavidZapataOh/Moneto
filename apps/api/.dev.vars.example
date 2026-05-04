@@ -1,0 +1,64 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Moneto API · Wrangler local secrets template
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Copy to `.dev.vars` (gitignored) — Wrangler `dev` lee este file y expone
+# las vars en `c.env.X` dentro del worker.
+#
+#   cp apps/api/.dev.vars.example apps/api/.dev.vars
+#
+# Producción NO usa este file — secrets se setean con `wrangler secret put`
+# por env (ver `docs/runbooks/secret-rotation.md`):
+#
+#   pnpm --filter @moneto/api exec wrangler secret put PRIVY_APP_SECRET --env staging
+#   pnpm --filter @moneto/api exec wrangler secret put PRIVY_APP_SECRET --env production
+#
+# Vars NO sensibles (LOG_LEVEL, ENVIRONMENT) viven en `wrangler.toml`
+# bajo `[env.X.vars]`, NO en este file.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Privy (server-side JWT validation + admin) ──────────────────────────────
+PRIVY_APP_SECRET=privy_app_secret_FROM_VAULT
+PRIVY_VERIFICATION_KEY=privy_verification_key_FROM_VAULT
+
+# ── Supabase admin (bypasses RLS — server only, never to mobile) ────────────
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# ── Solana RPC ──────────────────────────────────────────────────────────────
+HELIUS_API_KEY=YOUR_HELIUS_API_KEY
+# Webhook secret — Helius firma payloads, validamos signature server-side.
+HELIUS_WEBHOOK_SECRET=
+
+# ── Compliance ──────────────────────────────────────────────────────────────
+# Chainalysis sanctions screening (Address Screening API).
+CHAINALYSIS_API_KEY=
+# Persona — KYC document + selfie verification.
+PERSONA_API_KEY=
+
+# ── Partners (Sprint 6+) ────────────────────────────────────────────────────
+# Bold — off-ramp Colombia (PSE / Bancolombia).
+BOLD_API_KEY=
+# Rain — virtual + physical card issuance.
+RAIN_API_KEY=
+# Jupiter Pro — swap quotes (si tier paga).
+JUPITER_API_KEY=
+
+# ── Auth ────────────────────────────────────────────────────────────────────
+# JWT signing secret — rotar cada 90 días en producción. Min 32 chars.
+# Generar: `openssl rand -hex 32`
+JWT_SIGNING_SECRET=please_replace_with_openssl_rand_hex_32_minimum_32_chars
+
+# ── Observability ───────────────────────────────────────────────────────────
+# Sentry — error reporting + source maps upload.
+SENTRY_AUTH_TOKEN=
+# Axiom — log shipping (logger sink en sprint 0.05).
+AXIOM_TOKEN=
+
+# ── Notifications ───────────────────────────────────────────────────────────
+# Resend — transactional email (signup confirmation, recovery alerts).
+RESEND_API_KEY=
+# Twilio — SMS (post-MVP, KYC L2+ verification).
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=

@@ -1,1 +1,11 @@
+# Format staged files (prettier).
 pnpm exec lint-staged
+
+# Secret scan staged files. Si gitleaks no está instalado, warn y seguir
+# (devs nuevos pueden no tenerlo el día 1; CI lo gatea igual).
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner --config=.gitleaks.toml
+else
+  echo "⚠️  gitleaks not installed — skipping local secret scan."
+  echo "   Install: brew install gitleaks  (or see docs/onboarding/dev-setup.md)"
+fi

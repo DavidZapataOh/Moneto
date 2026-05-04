@@ -1,0 +1,56 @@
+# Gitleaks config for Moneto.
+#
+# Extiende el ruleset default + agrega allowlist para placeholders
+# legítimos (ejemplos en `.env.example`, fixtures, etc.) y patrones que
+# son IDs públicos (Privy app ID, Supabase anon key, Sentry DSN).
+#
+# Usage:
+#   • Local:  `gitleaks protect --staged` (corre desde `.husky/pre-commit`)
+#   • CI:     `gitleaks/gitleaks-action@v2` en `ci.yml` job `security-scan`
+#
+# Tunable: si gitleaks reporta un false positive recurrente, agregar el
+# regex aquí (NO disable la regla globalmente — siempre scoped).
+
+title = "Moneto secret-scanning ruleset"
+
+[extend]
+useDefault = true
+
+# ── Allowlist global ────────────────────────────────────────────────────────
+[allowlist]
+description = "Paths y patrones que no escanear / están permitidos"
+
+# Files que SON template de secrets — sus placeholders no son secrets reales.
+paths = [
+  '''\.env\.example$''',
+  '''\.dev\.vars\.example$''',
+  '''docs/runbooks/.*\.md$''',
+  '''docs/onboarding/.*\.md$''',
+  '''plans/.*\.md$''',
+  '''packages/config/src/env\.ts$''',
+  '''packages/config/src/constants\.ts$''',
+  '''pnpm-lock\.yaml$''',
+  '''package\.json$''',
+]
+
+# Strings que matchean reglas pero son intentional (placeholders, ejemplos).
+regexes = [
+  # Placeholders comunes en .env.example
+  '''YOUR_[A-Z_]+_KEY''',
+  '''YOUR_[A-Z_]+''',
+  '''xxx+''',
+  '''_FROM_VAULT''',
+  '''please_replace_with_.*''',
+  # Solana mainnet mints públicos (constantes documentadas).
+  '''EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v''', # USDC
+  '''Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB''', # USDT
+  '''So11111111111111111111111111111111111111112''',  # NATIVE_SOL
+  # Privy app ID format (público, embebido en bundles).
+  '''cl[a-z0-9]{20,}''',
+  # Supabase anon key (JWT, público) — solo placeholder pattern.
+  '''eyJxxxx+''',
+]
+
+# ── Reglas custom (opcional, complementan defaults) ─────────────────────────
+# (Ninguna por ahora — los defaults de gitleaks cubren AWS, GCP, Stripe,
+# GitHub PAT, Slack tokens, JWT, generic high-entropy strings, etc.)
