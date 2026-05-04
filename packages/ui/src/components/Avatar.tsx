@@ -1,7 +1,9 @@
 import { forwardRef } from "react";
 import { View } from "react-native";
-import { Text } from "./Text";
+
 import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl";
 export type AvatarTone = "brand" | "value" | "neutral";

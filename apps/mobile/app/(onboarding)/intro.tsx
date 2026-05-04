@@ -1,14 +1,20 @@
-import { useState, useRef } from "react";
-import { View, Image, ScrollView, Dimensions, Pressable, type LayoutChangeEvent } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Button } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
 import { fonts } from "@moneto/theme";
+import { Screen, Text, Button, useTheme, haptics } from "@moneto/ui";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useState, useRef } from "react";
+import {
+  View,
+  Image,
+  ScrollView,
+  Dimensions,
+  Pressable,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ImageSourcePropType,
+} from "react-native";
 
 const { width, height: SCREEN_H } = Dimensions.get("window");
 
@@ -32,7 +38,7 @@ type Slide = {
   badge: string;
   title: string;
   body: string;
-  image?: any;
+  image?: ImageSourcePropType;
 };
 
 const slides: Slide[] = [
@@ -66,7 +72,7 @@ export default function IntroCarousel() {
   // Una altura por slide: cada card (01 + título + body) tiene distinto height,
   // y con justifyContent: "center" la `y` del text block cambia por slide.
   const [heroHeights, setHeroHeights] = useState<number[]>(() =>
-    slides.map(() => HERO_HEIGHT_FALLBACK)
+    slides.map(() => HERO_HEIGHT_FALLBACK),
   );
   const scrollRef = useRef<ScrollView>(null);
 
@@ -96,7 +102,7 @@ export default function IntroCarousel() {
     scrollRef.current?.scrollTo({ x: next * width, animated: true });
   };
 
-  const onScroll = (e: any) => {
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
     const newIdx = Math.round(x / width);
     if (newIdx !== index) setIndex(newIdx);
@@ -127,8 +133,7 @@ export default function IntroCarousel() {
                 width: i === index ? 24 : 6,
                 height: 6,
                 borderRadius: 3,
-                backgroundColor:
-                  i === index ? colors.brand.primary : colors.border.default,
+                backgroundColor: i === index ? colors.brand.primary : colors.border.default,
               }}
             />
           ))}

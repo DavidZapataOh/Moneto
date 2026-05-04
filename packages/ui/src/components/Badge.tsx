@@ -1,8 +1,10 @@
+import { radius } from "@moneto/theme";
 import { forwardRef } from "react";
 import { View } from "react-native";
-import { radius } from "@moneto/theme";
-import { Text } from "./Text";
+
 import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export type BadgeTone = "neutral" | "success" | "warning" | "danger" | "brand" | "value";
 export type BadgeSize = "sm" | "md";

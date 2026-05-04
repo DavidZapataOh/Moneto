@@ -1,27 +1,20 @@
-import { useEffect, useMemo } from "react";
-import { useColorScheme } from "react-native";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import * as SplashScreen from "expo-splash-screen";
-import * as SystemUI from "expo-system-ui";
-import {
-  useFonts,
-  Fraunces_400Regular,
-  Fraunces_500Medium,
-} from "@expo-google-fonts/fraunces";
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
+import { useFonts, Fraunces_400Regular, Fraunces_500Medium } from "@expo-google-fonts/fraunces";
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from "@expo-google-fonts/inter";
 import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from "@expo-google-fonts/jetbrains-mono";
-import { ThemeProvider, useTheme } from "@moneto/ui";
 import { palette, type ThemeMode } from "@moneto/theme";
+import { ThemeProvider, useTheme } from "@moneto/ui";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
+import { useEffect, useMemo } from "react";
+import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
 import { useThemeStore } from "@stores/useThemeStore";
 
 import "../global.css";

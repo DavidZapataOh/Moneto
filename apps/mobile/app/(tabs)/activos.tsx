@@ -1,14 +1,20 @@
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { fonts } from "@moneto/theme";
+import {
+  Screen,
+  ScreenHeader,
+  SectionHeader,
+  Text,
+  Card,
+  Divider,
+  useTheme,
+  haptics,
+} from "@moneto/ui";
+import { View, Pressable } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Screen } from "@moneto/ui";
-import { ScreenHeader, SectionHeader } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
-import { YieldChart } from "@components/features/YieldChart";
+
 import { AssetRow } from "@components/features/AssetRow";
-import { useAppStore } from "@stores/useAppStore";
+import { YieldChart } from "@components/features/YieldChart";
 import {
   mockAssets,
   mockYieldHistory,
@@ -16,10 +22,8 @@ import {
   weightedApy,
   totalEarningUsd,
 } from "@data/mock";
-import { useTheme } from "@moneto/ui";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
-import { haptics } from "@moneto/ui";
-import { fonts } from "@moneto/theme";
+import { useAppStore } from "@stores/useAppStore";
 
 const SECTION_GAP = 32;
 
@@ -244,7 +248,8 @@ export default function ActivosScreen() {
                   }}
                 >
                   <Text variant="bodySmall" tone="tertiary">
-                    {v.allocation}% · ${((totalEarningUsd * v.allocation) / 100).toLocaleString("en-US", {
+                    {v.allocation}% · $
+                    {((totalEarningUsd * v.allocation) / 100).toLocaleString("en-US", {
                       maximumFractionDigits: 0,
                     })}
                   </Text>
@@ -287,7 +292,8 @@ export default function ActivosScreen() {
           style={{ marginTop: 2 }}
         />
         <Text variant="bodySmall" tone="tertiary" style={{ flex: 1 }}>
-          Moneto reparte tu balance entre vaults usando cómputo encriptado. Ningún protocolo ve cuánto tenés.
+          Moneto reparte tu balance entre vaults usando cómputo encriptado. Ningún protocolo ve
+          cuánto tenés.
         </Text>
       </Animated.View>
 

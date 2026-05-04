@@ -1,6 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Screen, Text, Button, useTheme } from "@moneto/ui";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View, Image, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,9 +11,6 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { Screen, Text, Button, useTheme } from "@moneto/ui";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -112,20 +112,12 @@ export default function WelcomeScreen() {
       >
         <View style={{ gap: 10 }}>
           <Animated.View style={titleStyle}>
-            <Text
-              variant="heroDisplayLarge"
-              tone="primary"
-              style={{ letterSpacing: -1.5 }}
-            >
+            <Text variant="heroDisplayLarge" tone="primary" style={{ letterSpacing: -1.5 }}>
               Tu dinero,{"\n"}a tu manera.
             </Text>
           </Animated.View>
           <Animated.View style={subStyle}>
-            <Text
-              variant="body"
-              tone="secondary"
-              style={{ lineHeight: 24, maxWidth: 320 }}
-            >
+            <Text variant="body" tone="secondary" style={{ lineHeight: 24, maxWidth: 320 }}>
               Un banco que trabaja para vos, no al revés.
             </Text>
           </Animated.View>
@@ -138,13 +130,7 @@ export default function WelcomeScreen() {
             size="lg"
             fullWidth
             onPress={() => router.push("/(onboarding)/intro")}
-            rightIcon={
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={colors.text.inverse}
-              />
-            }
+            rightIcon={<Ionicons name="arrow-forward" size={18} color={colors.text.inverse} />}
           />
           <Button
             label="Ya tengo cuenta"

@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { View, type ViewStyle, StyleSheet } from "react-native";
+
 import { useTheme } from "../hooks/useTheme";
 
 export interface DividerProps {

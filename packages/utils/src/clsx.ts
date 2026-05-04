@@ -2,11 +2,16 @@
  * Minimal clsx-compatible helper for className composition.
  */
 
-export type ClassValue = string | number | boolean | null | undefined | ClassArray | ClassDictionary;
-interface ClassArray extends Array<ClassValue> {}
-interface ClassDictionary {
-  [key: string]: unknown;
-}
+export type ClassValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | ClassValue[]
+  | ClassDictionary;
+
+export type ClassDictionary = Record<string, unknown>;
 
 export function clsx(inputs: ClassValue[]): string {
   const classes: string[] = [];

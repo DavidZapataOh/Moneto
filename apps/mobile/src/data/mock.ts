@@ -39,16 +39,7 @@ export interface User {
 
 // ─── Asset model ──────────────────────────────────────────────
 
-export type AssetId =
-  | "usd"
-  | "cop"
-  | "mxn"
-  | "brl"
-  | "ars"
-  | "eur"
-  | "sol"
-  | "btc"
-  | "eth";
+export type AssetId = "usd" | "cop" | "mxn" | "brl" | "ars" | "eur" | "sol" | "btc" | "eth";
 
 export type AssetCategory = "stable_usd" | "stable_local" | "stable_eur" | "volatile";
 

@@ -1,3 +1,4 @@
+import { radius, springs, durations } from "@moneto/theme";
 import { forwardRef, useCallback } from "react";
 import { Pressable, type PressableProps, View, ActivityIndicator } from "react-native";
 import Animated, {
@@ -6,10 +7,11 @@ import Animated, {
   withTiming,
   withSpring,
 } from "react-native-reanimated";
-import { radius, springs, durations } from "@moneto/theme";
-import { Text } from "./Text";
-import { useTheme } from "../hooks/useTheme";
+
 import { haptics, type HapticPattern } from "../hooks/useHaptics";
+import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";

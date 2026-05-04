@@ -1,4 +1,5 @@
 import { create } from "zustand";
+
 import {
   mockBalance,
   mockTransactions,
@@ -66,7 +67,11 @@ export const useAppStore = create<AppState>((set) => ({
     };
     set((s) => ({
       transactions: [newTx, ...s.transactions],
-      balance: { ...s.balance, totalUsd: s.balance.totalUsd - Math.abs(amount), availableUsd: s.balance.availableUsd - Math.abs(amount) },
+      balance: {
+        ...s.balance,
+        totalUsd: s.balance.totalUsd - Math.abs(amount),
+        availableUsd: s.balance.availableUsd - Math.abs(amount),
+      },
     }));
   },
 
@@ -84,7 +89,11 @@ export const useAppStore = create<AppState>((set) => ({
     };
     set((s) => ({
       transactions: [newTx, ...s.transactions],
-      balance: { ...s.balance, totalUsd: s.balance.totalUsd + Math.abs(amount), availableUsd: s.balance.availableUsd + Math.abs(amount) },
+      balance: {
+        ...s.balance,
+        totalUsd: s.balance.totalUsd + Math.abs(amount),
+        availableUsd: s.balance.availableUsd + Math.abs(amount),
+      },
     }));
   },
 }));

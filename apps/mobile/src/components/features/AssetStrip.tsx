@@ -1,11 +1,11 @@
-import { ScrollView, View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Text } from "@moneto/ui";
-import { AssetIcon } from "./AssetIcon";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
 import { fonts } from "@moneto/theme";
+import { Text, useTheme, haptics } from "@moneto/ui";
+import { useRouter, type Href } from "expo-router";
+import { ScrollView, View, Pressable } from "react-native";
+
+import { AssetIcon } from "./AssetIcon";
+
 import type { Asset } from "@data/mock";
 
 interface AssetStripProps {
@@ -39,12 +39,12 @@ export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
 
   const handleAssetPress = (assetId: string) => {
     haptics.tap();
-    router.push(`/(tabs)/activos?asset=${assetId}` as any);
+    router.push(`/(tabs)/activos?asset=${assetId}` as Href);
   };
 
   const handleSeeAll = () => {
     haptics.tap();
-    router.push("/(tabs)/activos" as any);
+    router.push("/(tabs)/activos" as Href);
   };
 
   return (
@@ -54,11 +54,7 @@ export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
       contentContainerStyle={{ gap: 10, paddingRight: 4 }}
     >
       {visible.map((asset) => (
-        <AssetChip
-          key={asset.id}
-          asset={asset}
-          onPress={() => handleAssetPress(asset.id)}
-        />
+        <AssetChip key={asset.id} asset={asset} onPress={() => handleAssetPress(asset.id)} />
       ))}
       {hasMore && <SeeAllChip onPress={handleSeeAll} />}
     </ScrollView>
@@ -69,10 +65,7 @@ function AssetChip({ asset, onPress }: { asset: Asset; onPress: () => void }) {
   const { colors } = useTheme();
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       <View
         style={{
           width: 120,
@@ -131,7 +124,8 @@ function AssetChip({ asset, onPress }: { asset: Asset; onPress: () => void }) {
             allowFontScaling={false}
             numberOfLines={1}
           >
-            ${asset.balanceUsd >= 1000
+            $
+            {asset.balanceUsd >= 1000
               ? `${(asset.balanceUsd / 1000).toFixed(1)}K`
               : asset.balanceUsd.toFixed(0)}
           </Text>
@@ -145,10 +139,7 @@ function SeeAllChip({ onPress }: { onPress: () => void }) {
   const { colors } = useTheme();
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       {/* Mismo layout interno que AssetChip para que las alturas coincidan */}
       <View
         style={{

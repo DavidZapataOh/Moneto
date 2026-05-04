@@ -1,13 +1,14 @@
+import { Ionicons } from "@expo/vector-icons";
+import { palette, fonts } from "@moneto/theme";
+import { Screen, Text, Card, Button, IconButton, Divider, useTheme, haptics } from "@moneto/ui";
+import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View, Pressable, Share } from "react-native";
-import { useRouter } from "expo-router";
-import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Screen, Text, Card, Button, IconButton, Divider, useTheme, haptics } from "@moneto/ui";
+
 import { useAppStore } from "@stores/useAppStore";
-import { palette, fonts } from "@moneto/theme";
 
 export default function ReceiveScreen() {
   const router = useRouter();
@@ -31,7 +32,9 @@ export default function ReceiveScreen() {
       await Share.share({
         message: `Pagáme en Moneto: https://${payrollLink}`,
       });
-    } catch {}
+    } catch {
+      // Share dialog cancelled — no-op (user dismissed sheet, no error to surface).
+    }
   };
 
   const simulatePayroll = () => {
@@ -61,7 +64,10 @@ export default function ReceiveScreen() {
         />
       </View>
 
-      <Animated.View entering={FadeInDown.duration(400)} style={{ alignItems: "center", marginBottom: 28 }}>
+      <Animated.View
+        entering={FadeInDown.duration(400)}
+        style={{ alignItems: "center", marginBottom: 28 }}
+      >
         <View
           style={{
             padding: 20,
@@ -131,9 +137,7 @@ export default function ReceiveScreen() {
             variant="primary"
             fullWidth
             onPress={handleShare}
-            leftIcon={
-              <Ionicons name="share-outline" size={16} color={colors.text.inverse} />
-            }
+            leftIcon={<Ionicons name="share-outline" size={16} color={colors.text.inverse} />}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -154,19 +158,12 @@ export default function ReceiveScreen() {
       </Animated.View>
 
       {/* What happens */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(240)}
-        style={{ marginTop: 28 }}
-      >
+      <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: 28 }}>
         <Text variant="label" tone="secondary" style={{ marginBottom: 8 }}>
           Qué pasa cuando pagan
         </Text>
         <Card variant="sunken" padded radius="md">
-          <StepRow
-            n={1}
-            title="USD llegan"
-            sub="Aparecen en tu saldo sin intermediarios"
-          />
+          <StepRow n={1} title="USD llegan" sub="Aparecen en tu saldo sin intermediarios" />
           <Divider />
           <StepRow
             n={2}

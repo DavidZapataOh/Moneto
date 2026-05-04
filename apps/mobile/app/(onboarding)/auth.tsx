@@ -1,16 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
+import { Screen, Text, Button, Logo, Divider, useTheme, haptics } from "@moneto/ui";
+import { LinearGradient } from "expo-linear-gradient";
+import * as LocalAuthentication from "expo-local-authentication";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View, Pressable, StyleSheet, Dimensions } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import * as LocalAuthentication from "expo-local-authentication";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Button } from "@moneto/ui";
-import { Logo } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
+
 import { useAppStore } from "@stores/useAppStore";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -36,15 +31,7 @@ const COPY: Record<AuthMode, { title: string; subtitle?: string; terms: string }
 };
 
 // Cuadrícula de líneas hairline. Sin bg. Solo trazos verticales + horizontales.
-function GridPattern({
-  width,
-  height,
-  color,
-}: {
-  width: number;
-  height: number;
-  color: string;
-}) {
+function GridPattern({ width, height, color }: { width: number; height: number; color: string }) {
   const cols = Math.ceil(width / GRID_CELL) + 1;
   const rows = Math.ceil(height / GRID_CELL) + 1;
 
@@ -121,9 +108,7 @@ export default function AuthScreen() {
 
   // Líneas del grid tintadas con brand primary — le da calor y marca identidad,
   // no es gris neutro. Opacidad baja para que se lea como textura, no como UI.
-  const gridLineColor = isDark
-    ? "rgba(197, 103, 64, 0.22)"
-    : "rgba(181, 69, 43, 0.14)";
+  const gridLineColor = isDark ? "rgba(197, 103, 64, 0.22)" : "rgba(181, 69, 43, 0.14)";
 
   // Color del bg (ink-900 dark / cream-50 light) en rgba para los fades.
   const bgOpaque = isDark ? "rgba(20, 16, 11, 1)" : "rgba(251, 247, 239, 1)";
@@ -197,11 +182,7 @@ export default function AuthScreen() {
         >
           <Logo size={72} variant="mark" tone="brand" />
           <View style={{ gap: 12, alignItems: "center" }}>
-            <Text
-              variant="heroDisplay"
-              tone="primary"
-              style={{ textAlign: "center" }}
-            >
+            <Text variant="heroDisplay" tone="primary" style={{ textAlign: "center" }}>
               {copy.title}
             </Text>
             {copy.subtitle && (
@@ -225,9 +206,7 @@ export default function AuthScreen() {
             fullWidth
             loading={loading === "passkey"}
             onPress={() => handleAuth("passkey")}
-            leftIcon={
-              <Ionicons name="shield-checkmark" size={18} color={colors.text.inverse} />
-            }
+            leftIcon={<Ionicons name="shield-checkmark" size={18} color={colors.text.inverse} />}
           />
 
           <View

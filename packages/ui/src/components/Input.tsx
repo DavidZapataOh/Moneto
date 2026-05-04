@@ -1,3 +1,4 @@
+import { radius, type, hitSlop } from "@moneto/theme";
 import { forwardRef, useState, useCallback } from "react";
 import {
   TextInput as RNTextInput,
@@ -6,9 +7,10 @@ import {
   type ViewStyle,
   Pressable,
 } from "react-native";
-import { radius, type, hitSlop } from "@moneto/theme";
-import { Text } from "./Text";
+
 import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export type InputVariant = "outlined" | "filled" | "ghost";
 export type InputSize = "md" | "lg";

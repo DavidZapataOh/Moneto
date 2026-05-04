@@ -1,24 +1,18 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Screen, Text, Card, Avatar, Divider, SectionHeader, useTheme, haptics } from "@moneto/ui";
+import { getGreeting } from "@moneto/utils";
+import { useRouter } from "expo-router";
+import { View, Pressable } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Avatar } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
-import { SectionHeader } from "@moneto/ui";
+
+import { AssetStrip } from "@components/features/AssetStrip";
 import { BalanceHero } from "@components/features/BalanceHero";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { YieldChart } from "@components/features/YieldChart";
-import { AssetStrip } from "@components/features/AssetStrip";
-import { useAppStore } from "@stores/useAppStore";
 import { mockYieldHistory, mockAssets } from "@data/mock";
-import { useTheme } from "@moneto/ui";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
-import { haptics } from "@moneto/ui";
-import { getGreeting } from "@moneto/utils";
+import { useAppStore } from "@stores/useAppStore";
 
 // Spacing system (8-pt grid):
 // - SCREEN_PADDING: 20 (handled by Screen padded=true)
@@ -70,15 +64,8 @@ export default function HomeScreen() {
         </Pressable>
 
         <View style={{ flexDirection: "row", gap: 4 }}>
-          <HeaderIconButton
-            icon="scan-outline"
-            onPress={() => haptics.tap()}
-          />
-          <HeaderIconButton
-            icon="notifications-outline"
-            hasBadge
-            onPress={() => haptics.tap()}
-          />
+          <HeaderIconButton icon="scan-outline" onPress={() => haptics.tap()} />
+          <HeaderIconButton icon="notifications-outline" hasBadge onPress={() => haptics.tap()} />
         </View>
       </View>
 

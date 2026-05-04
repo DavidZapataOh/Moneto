@@ -1,6 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
+import { fonts, palette } from "@moneto/theme";
+import { Text, Logo, haptics } from "@moneto/ui";
+import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect } from "react";
 import { View, Pressable, Dimensions } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -9,12 +12,6 @@ import Animated, {
   interpolate,
   Easing,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
-import { Text } from "@moneto/ui";
-import { Logo } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
-import { fonts } from "@moneto/theme";
-import { palette } from "@moneto/theme";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const CARD_WIDTH = Math.min(SCREEN_W - 40, 360);
@@ -128,9 +125,20 @@ export function VirtualCard({
               justifyContent: "space-between",
             }}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Logo size={28} variant="mark" tone="inverse" />
-              <Ionicons name="wifi" size={20} color={palette.cream[50]} style={{ transform: [{ rotate: "90deg" }] }} />
+              <Ionicons
+                name="wifi"
+                size={20}
+                color={palette.cream[50]}
+                style={{ transform: [{ rotate: "90deg" }] }}
+              />
             </View>
 
             <View>
@@ -145,7 +153,14 @@ export function VirtualCard({
                 •••• •••• •••• {last4}
               </Text>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 14 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-end",
+                  marginTop: 14,
+                }}
+              >
                 <View style={{ gap: 2 }}>
                   <Text
                     style={{
@@ -225,8 +240,10 @@ export function VirtualCard({
               >
                 CVV · Exp
               </Text>
-              <Text style={{ fontFamily: fonts.monoMedium, fontSize: 16, color: palette.cream[50] }}>
-                •••  ·  ••/••
+              <Text
+                style={{ fontFamily: fonts.monoMedium, fontSize: 16, color: palette.cream[50] }}
+              >
+                ••• · ••/••
               </Text>
             </View>
           </LinearGradient>

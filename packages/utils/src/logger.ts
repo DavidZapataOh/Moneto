@@ -87,14 +87,10 @@ function emit(level: LogLevel, scope: string, message: string, data?: Record<str
  */
 export function createLogger(scope: string) {
   return {
-    debug: (message: string, data?: Record<string, unknown>) =>
-      emit("debug", scope, message, data),
-    info: (message: string, data?: Record<string, unknown>) =>
-      emit("info", scope, message, data),
-    warn: (message: string, data?: Record<string, unknown>) =>
-      emit("warn", scope, message, data),
-    error: (message: string, data?: Record<string, unknown>) =>
-      emit("error", scope, message, data),
+    debug: (message: string, data?: Record<string, unknown>) => emit("debug", scope, message, data),
+    info: (message: string, data?: Record<string, unknown>) => emit("info", scope, message, data),
+    warn: (message: string, data?: Record<string, unknown>) => emit("warn", scope, message, data),
+    error: (message: string, data?: Record<string, unknown>) => emit("error", scope, message, data),
   };
 }
 

@@ -1,16 +1,9 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
-import {
-  useThemeStore,
-  type ThemePreference,
-} from "@stores/useThemeStore";
+import { Screen, Text, Card, Divider, useTheme, haptics } from "@moneto/ui";
+import { useRouter } from "expo-router";
+import { View, Pressable } from "react-native";
+
+import { useThemeStore, type ThemePreference } from "@stores/useThemeStore";
 
 type Option = {
   value: ThemePreference;
@@ -112,9 +105,7 @@ export default function AppearanceScreen() {
                     <Ionicons
                       name={opt.icon}
                       size={20}
-                      color={
-                        selected ? colors.brand.primary : colors.text.secondary
-                      }
+                      color={selected ? colors.brand.primary : colors.text.secondary}
                     />
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
@@ -125,13 +116,7 @@ export default function AppearanceScreen() {
                       {opt.sub}
                     </Text>
                   </View>
-                  {selected && (
-                    <Ionicons
-                      name="checkmark"
-                      size={20}
-                      color={colors.brand.primary}
-                    />
-                  )}
+                  {selected && <Ionicons name="checkmark" size={20} color={colors.brand.primary} />}
                 </View>
               </Pressable>
               {i < OPTIONS.length - 1 && (

@@ -1,10 +1,10 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
-import { Text } from "@moneto/ui";
-import { AssetIcon } from "./AssetIcon";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
 import { fonts } from "@moneto/theme";
+import { Text, useTheme, haptics } from "@moneto/ui";
+import { useRouter, type Href } from "expo-router";
+import { View, Pressable } from "react-native";
+
+import { AssetIcon } from "./AssetIcon";
+
 import type { Asset } from "@data/mock";
 
 interface AssetRowProps {
@@ -34,7 +34,7 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
       return;
     }
     haptics.tap();
-    router.push(`/(tabs)/activos?asset=${asset.id}` as any);
+    router.push(`/(tabs)/activos?asset=${asset.id}` as Href);
   };
 
   // Format native balance
@@ -54,39 +54,34 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
   }).format(asset.balanceUsd);
 
   // Sub line — contextual per type
-  const subLine = asset.isEarning && asset.apy ? (
-    <Text variant="bodySmall" tone="tertiary" numberOfLines={1}>
-      <Text variant="bodySmall" tone="value">{(asset.apy * 100).toFixed(2)}% APY</Text>
-      {"  ·  rindiendo"}
-    </Text>
-  ) : asset.change24h !== undefined ? (
-    <Text
-      variant="bodySmall"
-      tone="tertiary"
-      numberOfLines={1}
-    >
-      <Text
-        variant="bodySmall"
-        style={{
-          color: asset.change24h >= 0 ? colors.success : colors.danger,
-        }}
-      >
-        {asset.change24h >= 0 ? "↑" : "↓"}{" "}
-        {Math.abs(asset.change24h * 100).toFixed(2)}%
+  const subLine =
+    asset.isEarning && asset.apy ? (
+      <Text variant="bodySmall" tone="tertiary" numberOfLines={1}>
+        <Text variant="bodySmall" tone="value">
+          {(asset.apy * 100).toFixed(2)}% APY
+        </Text>
+        {"  ·  rindiendo"}
       </Text>
-      {"  ·  hoy"}
-    </Text>
-  ) : (
-    <Text variant="bodySmall" tone="tertiary">
-      —
-    </Text>
-  );
+    ) : asset.change24h !== undefined ? (
+      <Text variant="bodySmall" tone="tertiary" numberOfLines={1}>
+        <Text
+          variant="bodySmall"
+          style={{
+            color: asset.change24h >= 0 ? colors.success : colors.danger,
+          }}
+        >
+          {asset.change24h >= 0 ? "↑" : "↓"} {Math.abs(asset.change24h * 100).toFixed(2)}%
+        </Text>
+        {"  ·  hoy"}
+      </Text>
+    ) : (
+      <Text variant="bodySmall" tone="tertiary">
+        —
+      </Text>
+    );
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       <View
         style={{
           flexDirection: "row",

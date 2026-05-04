@@ -1,13 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme, haptics } from "@moneto/ui";
+import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Platform, View, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
-import {
-  TAB_BAR_CONTENT_HEIGHT,
-  useTabBarBottomPad,
-} from "@hooks/useTabBarSpace";
+
+import { TAB_BAR_CONTENT_HEIGHT, useTabBarBottomPad } from "@hooks/useTabBarSpace";
 
 /**
  * Bottom tab bar spec:
@@ -47,8 +44,7 @@ export default function TabsLayout() {
           right: 0,
           borderTopColor: colors.border.subtle,
           borderTopWidth: StyleSheet.hairlineWidth,
-          backgroundColor:
-            Platform.OS === "ios" ? "transparent" : colors.bg.primary,
+          backgroundColor: Platform.OS === "ios" ? "transparent" : colors.bg.primary,
           height: totalHeight,
           paddingBottom: bottomPad,
           paddingTop: 0,
@@ -62,9 +58,7 @@ export default function TabsLayout() {
               intensity={80}
               style={{
                 flex: 1,
-                backgroundColor: isDark
-                  ? "rgba(20,16,11,0.72)"
-                  : "rgba(251,247,239,0.82)",
+                backgroundColor: isDark ? "rgba(20,16,11,0.72)" : "rgba(251,247,239,0.82)",
               }}
             />
           ) : (
@@ -80,11 +74,7 @@ export default function TabsLayout() {
         options={{
           title: "Saldo",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "home" : "home-outline"}
-              size={24}
-              color={color}
-            />
+            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -93,11 +83,7 @@ export default function TabsLayout() {
         options={{
           title: "Tarjeta",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "card" : "card-outline"}
-              size={24}
-              color={color}
-            />
+            <Ionicons name={focused ? "card" : "card-outline"} size={24} color={color} />
           ),
         }}
       />
@@ -106,11 +92,7 @@ export default function TabsLayout() {
         options={{
           title: "Activos",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "layers" : "layers-outline"}
-              size={24}
-              color={color}
-            />
+            <Ionicons name={focused ? "layers" : "layers-outline"} size={24} color={color} />
           ),
         }}
       />

@@ -3,12 +3,7 @@ import { z } from "zod";
 /**
  * KYC compliance levels per `moneto-compliance-stance.md` §3.1.
  */
-export const KycLevelSchema = z.union([
-  z.literal(0),
-  z.literal(1),
-  z.literal(2),
-  z.literal(3),
-]);
+export const KycLevelSchema = z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]);
 export type KycLevel = z.infer<typeof KycLevelSchema>;
 
 export const KycStatusSchema = z.enum(["none", "pending", "approved", "rejected"]);

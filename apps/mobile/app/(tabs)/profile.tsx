@@ -1,18 +1,12 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Screen, SectionHeader, Text, Card, Avatar, Divider, useTheme, haptics } from "@moneto/ui";
+import { useRouter, type Href } from "expo-router";
+import { View, Pressable } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { Screen } from "@moneto/ui";
-import { SectionHeader } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Avatar } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
+
+import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { useAppStore } from "@stores/useAppStore";
 import { useThemeStore } from "@stores/useThemeStore";
-import { useTheme } from "@moneto/ui";
-import { useTabBarSpace } from "@hooks/useTabBarSpace";
-import { haptics } from "@moneto/ui";
 
 const SECTION_GAP = 32;
 
@@ -21,8 +15,8 @@ type RowItem = {
   label: string;
   // Top-right slot: value destacado (Verificado, Gestionar, "Activo")
   // Bottom line tiene sub a izq y meta a der SIEMPRE — así queda estructura 2-col
-  sub: string;         // izquierda línea inferior
-  meta?: string;       // derecha línea inferior
+  sub: string; // izquierda línea inferior
+  meta?: string; // derecha línea inferior
   route: string | null;
   badge?: string;
   badgeTone?: "brand" | "success";
@@ -141,7 +135,7 @@ export default function ProfileScreen() {
         <View style={{ alignItems: "center", gap: 4 }}>
           <Text variant="h2">{user.name}</Text>
           <Text variant="bodySmall" tone="tertiary">
-            {user.handle}  ·  Colombia
+            {user.handle} · Colombia
           </Text>
         </View>
         <View
@@ -176,7 +170,7 @@ export default function ProfileScreen() {
                   item={item}
                   onPress={() => {
                     haptics.tap();
-                    if (item.route) router.push(item.route as any);
+                    if (item.route) router.push(item.route as Href);
                   }}
                 />
                 {i < section.items.length - 1 && (
@@ -229,13 +223,7 @@ export default function ProfileScreen() {
  *
  * Siempre contenido a izquierda Y derecha en ambas líneas = estructura visible.
  */
-function SettingRow({
-  item,
-  onPress,
-}: {
-  item: RowItem;
-  onPress: () => void;
-}) {
+function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
   const { colors } = useTheme();
 
   const iconBg =
@@ -267,10 +255,7 @@ function SettingRow({
         : colors.text.secondary;
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       {/* Layout exactamente como VaultRow: View plano con todo el styling */}
       <View
         style={{
@@ -281,99 +266,83 @@ function SettingRow({
           gap: 12,
         }}
       >
-      {/* Icon 48×48 */}
-      <View
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 24,
-          backgroundColor: iconBg,
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        <Ionicons name={item.icon} size={20} color={iconColor} />
-      </View>
-
-      {/* Content column */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        {/* TOP LINE: label + badge (si hay) */}
+        {/* Icon 48×48 */}
         <View
           style={{
-            flexDirection: "row",
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            backgroundColor: iconBg,
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            marginBottom: 4,
+            justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
-            {item.label}
-          </Text>
-
-          {item.badge && (
-            <View
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 4,
-                borderRadius: 999,
-                backgroundColor: badgeBg,
-                flexShrink: 0,
-              }}
-            >
-              <Text
-                variant="bodySmall"
-                style={{ color: badgeFg, fontSize: 11 }}
-              >
-                {item.badge}
-              </Text>
-            </View>
-          )}
+          <Ionicons name={item.icon} size={20} color={iconColor} />
         </View>
 
-        {/* BOTTOM LINE: sub (izq) + meta + chevron (der, inline y alineados) */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
-          <Text
-            variant="bodySmall"
-            tone="tertiary"
-            numberOfLines={1}
-            style={{ flex: 1 }}
-          >
-            {item.sub}
-          </Text>
+        {/* Content column */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          {/* TOP LINE: label + badge (si hay) */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 4,
-              flexShrink: 0,
+              justifyContent: "space-between",
+              gap: 8,
+              marginBottom: 4,
             }}
           >
-            {item.meta && (
-              <Text
-                variant="bodySmall"
-                tone="secondary"
-                numberOfLines={1}
+            <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
+              {item.label}
+            </Text>
+
+            {item.badge && (
+              <View
+                style={{
+                  paddingHorizontal: 8,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: badgeBg,
+                  flexShrink: 0,
+                }}
               >
-                {item.meta}
-              </Text>
+                <Text variant="bodySmall" style={{ color: badgeFg, fontSize: 11 }}>
+                  {item.badge}
+                </Text>
+              </View>
             )}
-            <Ionicons
-              name="chevron-forward"
-              size={14}
-              color={colors.text.tertiary}
-            />
+          </View>
+
+          {/* BOTTOM LINE: sub (izq) + meta + chevron (der, inline y alineados) */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            <Text variant="bodySmall" tone="tertiary" numberOfLines={1} style={{ flex: 1 }}>
+              {item.sub}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                flexShrink: 0,
+              }}
+            >
+              {item.meta && (
+                <Text variant="bodySmall" tone="secondary" numberOfLines={1}>
+                  {item.meta}
+                </Text>
+              )}
+              <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
+            </View>
           </View>
         </View>
-      </View>
       </View>
     </Pressable>
   );

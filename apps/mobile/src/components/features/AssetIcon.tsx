@@ -1,6 +1,6 @@
-import { View, Image } from "react-native";
-import { Text } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
+import { Text, useTheme } from "@moneto/ui";
+import { View, Image, type ImageSourcePropType } from "react-native";
+
 import type { Asset, AssetId } from "@data/mock";
 
 interface AssetIconProps {
@@ -13,12 +13,12 @@ interface AssetIconProps {
  * Stables con flag → la flag llena el círculo (cover).
  * Crypto logos → logo dentro de bubble tinted.
  */
-const flagImages: Partial<Record<AssetId, any>> = {
+const flagImages: Partial<Record<AssetId, ImageSourcePropType>> = {
   usd: require("../../../assets/images/Flag_of_the_United_States.png"),
   cop: require("../../../assets/images/Flag_Colombia.png"),
 };
 
-const cryptoLogos: Partial<Record<AssetId, any>> = {
+const cryptoLogos: Partial<Record<AssetId, ImageSourcePropType>> = {
   btc: require("../../../assets/images/bitcoin.png"),
   eth: require("../../../assets/images/ethereum-eth-logo.png"),
   sol: require("../../../assets/images/Solana_logo.png"),
@@ -42,11 +42,7 @@ export function AssetIcon({ asset, size = 48 }: AssetIconProps) {
           borderColor: colors.border.subtle,
         }}
       >
-        <Image
-          source={flag}
-          style={{ width: size, height: size }}
-          resizeMode="cover"
-        />
+        <Image source={flag} style={{ width: size, height: size }} resizeMode="cover" />
       </View>
     );
   }
@@ -65,11 +61,7 @@ export function AssetIcon({ asset, size = 48 }: AssetIconProps) {
           backgroundColor: colors.bg.overlay,
         }}
       >
-        <Image
-          source={logo}
-          style={{ width: size, height: size }}
-          resizeMode="cover"
-        />
+        <Image source={logo} style={{ width: size, height: size }} resizeMode="cover" />
       </View>
     );
   }

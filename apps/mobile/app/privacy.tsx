@@ -1,10 +1,11 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { Screen, Text, Card, IconButton, Badge, Divider, useTheme, haptics } from "@moneto/ui";
-import { useAppStore } from "@stores/useAppStore";
 import { fonts } from "@moneto/theme";
+import { Screen, Text, Card, IconButton, Badge, Divider, useTheme, haptics } from "@moneto/ui";
+import { useRouter } from "expo-router";
+import { View, Pressable } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+
+import { useAppStore } from "@stores/useAppStore";
 
 export default function PrivacyScreen() {
   const router = useRouter();
@@ -83,10 +84,7 @@ export default function PrivacyScreen() {
       </Animated.View>
 
       {/* Viewing keys */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(80)}
-        style={{ marginTop: 28 }}
-      >
+      <Animated.View entering={FadeInDown.duration(400).delay(80)} style={{ marginTop: 28 }}>
         <View
           style={{
             flexDirection: "row",
@@ -121,7 +119,7 @@ export default function PrivacyScreen() {
             {viewingKeys.map((vk) => {
               const daysLeft = Math.max(
                 0,
-                Math.floor((vk.expiresAt - Date.now()) / (24 * 3600 * 1000))
+                Math.floor((vk.expiresAt - Date.now()) / (24 * 3600 * 1000)),
               );
               return (
                 <Card key={vk.id} variant="outlined" padded radius="md">
@@ -142,11 +140,7 @@ export default function PrivacyScreen() {
                         justifyContent: "center",
                       }}
                     >
-                      <Ionicons
-                        name="key-outline"
-                        size={16}
-                        color={colors.text.primary}
-                      />
+                      <Ionicons name="key-outline" size={16} color={colors.text.primary} />
                     </View>
                     <View style={{ flex: 1, gap: 4 }}>
                       <Text variant="bodyMedium">{vk.label}</Text>
@@ -162,11 +156,7 @@ export default function PrivacyScreen() {
                         />
                       </View>
                     </View>
-                    <Ionicons
-                      name="ellipsis-vertical"
-                      size={18}
-                      color={colors.text.tertiary}
-                    />
+                    <Ionicons name="ellipsis-vertical" size={18} color={colors.text.tertiary} />
                   </View>
                 </Card>
               );
@@ -204,10 +194,7 @@ export default function PrivacyScreen() {
       </Animated.View>
 
       {/* Disclosure */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(240)}
-        style={{ marginTop: 24 }}
-      >
+      <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: 24 }}>
         <Card variant="outlined" padded radius="md">
           <View style={{ flexDirection: "row", gap: 12 }}>
             <Ionicons
@@ -217,7 +204,8 @@ export default function PrivacyScreen() {
               style={{ marginTop: 2 }}
             />
             <Text variant="bodySmall" tone="secondary" style={{ flex: 1, lineHeight: 19 }}>
-              Moneto usa privacidad selectiva, no anonimato. Viewing keys te permiten compartir transacciones específicas con compliance, sin exponer tu historial completo.
+              Moneto usa privacidad selectiva, no anonimato. Viewing keys te permiten compartir
+              transacciones específicas con compliance, sin exponer tu historial completo.
             </Text>
           </View>
         </Card>
@@ -271,10 +259,7 @@ function ActionRow({
 }) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       <View
         style={{
           flexDirection: "row",

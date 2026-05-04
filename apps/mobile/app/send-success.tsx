@@ -1,6 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
+import { fonts } from "@moneto/theme";
+import { Screen, Text, Button, useTheme, haptics } from "@moneto/ui";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,9 +12,6 @@ import Animated, {
   withTiming,
   withDelay,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
-import { Screen, Text, Button, useTheme, haptics } from "@moneto/ui";
-import { fonts } from "@moneto/theme";
 
 export default function SendSuccessScreen() {
   const router = useRouter();
@@ -41,8 +41,8 @@ export default function SendSuccessScreen() {
       180,
       withSequence(
         withSpring(1.2, { damping: 10, stiffness: 240 }),
-        withSpring(1, { damping: 14, stiffness: 200 })
-      )
+        withSpring(1, { damping: 14, stiffness: 200 }),
+      ),
     );
 
     // Afterglow
@@ -57,15 +57,7 @@ export default function SendSuccessScreen() {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [
-    ringOpacity,
-    ringScale,
-    checkOpacity,
-    checkScale,
-    titleOpacity,
-    bodyOpacity,
-    ctaOpacity,
-  ]);
+  }, [ringOpacity, ringScale, checkOpacity, checkScale, titleOpacity, bodyOpacity, ctaOpacity]);
 
   const ringStyle = useAnimatedStyle(() => ({
     opacity: ringOpacity.value,
@@ -153,7 +145,11 @@ export default function SendSuccessScreen() {
                   includeFontPadding: false,
                 }}
               >
-                ${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                $
+                {amount.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                })}
               </Text>
               <Text
                 style={{
@@ -175,7 +171,7 @@ export default function SendSuccessScreen() {
           </Animated.View>
 
           {isCashout && (
-            <Animated.View style={[bodyStyle]}>
+            <Animated.View style={bodyStyle}>
               <View
                 style={{
                   flexDirection: "row",

@@ -1,10 +1,9 @@
-import { View, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Text } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
-import { formatRelative } from "@moneto/utils";
 import { fonts } from "@moneto/theme";
+import { Text, useTheme, haptics } from "@moneto/ui";
+import { formatRelative } from "@moneto/utils";
+import { View, Pressable } from "react-native";
+
 import type { Transaction } from "@data/mock";
 
 interface TransactionRowProps {
@@ -37,21 +36,13 @@ const typeConfig = {
  * Bottom line: tipo · fecha (flex:1) + status privacy (derecha)
  * Ambas líneas tienen contenido a IZQUIERDA y DERECHA → estructura visible
  */
-export function TransactionRow({
-  tx,
-  onPress,
-  showDate = true,
-}: TransactionRowProps) {
+export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowProps) {
   const { colors } = useTheme();
   const cfg = typeConfig[tx.type];
   const isIncoming = tx.amount > 0;
 
   const amountColor =
-    tx.type === "yield"
-      ? colors.value
-      : isIncoming
-        ? colors.success
-        : colors.text.primary;
+    tx.type === "yield" ? colors.value : isIncoming ? colors.success : colors.text.primary;
 
   const iconBg =
     cfg.color === "success"
@@ -86,10 +77,7 @@ export function TransactionRow({
   const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
+    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
       {/* Layout exactamente como VaultRow: View plano con todo el styling */}
       <View
         style={{
@@ -117,65 +105,61 @@ export function TransactionRow({
 
         {/* Content column */}
         <View style={{ flex: 1, minWidth: 0 }}>
-        {/* TOP LINE: title (left) + amount (right) */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 8,
-            marginBottom: 4,
-          }}
-        >
-          <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
-            {title}
-          </Text>
-
-          {/* Amount — View con dos Text separados (NO nested) */}
+          {/* TOP LINE: title (left) + amount (right) */}
           <View
             style={{
               flexDirection: "row",
               alignItems: "baseline",
-              flexShrink: 0,
+              justifyContent: "space-between",
+              gap: 8,
+              marginBottom: 4,
             }}
           >
-            <Text
-              style={{
-                fontFamily: fonts.monoMedium,
-                fontSize: 16,
-                lineHeight: 20,
-                letterSpacing: -0.1,
-                color: amountColor,
-              }}
-              allowFontScaling={false}
-            >
-              {sign}${formattedInt}
+            <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
+              {title}
             </Text>
-            <Text
-              style={{
-                fontFamily: fonts.monoMedium,
-                fontSize: 12,
-                lineHeight: 16,
-                color: amountColor,
-                opacity: 0.55,
-              }}
-              allowFontScaling={false}
-            >
-              .{decPart}
-            </Text>
-          </View>
-        </View>
 
-        {/* BOTTOM LINE: tipo · timestamp (la privacidad es invisible, no se comunica) */}
-        <Text
-          variant="bodySmall"
-          tone="tertiary"
-          numberOfLines={1}
-        >
-          {typeLabel}
-          {timeLabel ? "  ·  " + timeLabel : ""}
-        </Text>
-      </View>
+            {/* Amount — View con dos Text separados (NO nested) */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "baseline",
+                flexShrink: 0,
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.monoMedium,
+                  fontSize: 16,
+                  lineHeight: 20,
+                  letterSpacing: -0.1,
+                  color: amountColor,
+                }}
+                allowFontScaling={false}
+              >
+                {sign}${formattedInt}
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fonts.monoMedium,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  color: amountColor,
+                  opacity: 0.55,
+                }}
+                allowFontScaling={false}
+              >
+                .{decPart}
+              </Text>
+            </View>
+          </View>
+
+          {/* BOTTOM LINE: tipo · timestamp (la privacidad es invisible, no se comunica) */}
+          <Text variant="bodySmall" tone="tertiary" numberOfLines={1}>
+            {typeLabel}
+            {timeLabel ? "  ·  " + timeLabel : ""}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );

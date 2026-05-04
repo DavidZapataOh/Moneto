@@ -1,18 +1,72 @@
-name = "moneto-api"
+name = "moneto-api-dev"
 main = "src/index.ts"
-compatibility_date = "2025-04-01"
+compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-# --- Environments -----------------------------------------------------------
-# Vars y secrets se inyectan vía `wrangler secret put` por env. Nada commiteado.
-# Bindings (D1, KV, R2, Queues) se añaden en el sprint que los necesite.
+# --- Top-level config -------------------------------------------------------
+# Reglas:
+# - Vars NO sensibles van inline en `[env.X.vars]`.
+# - Secrets se inyectan via `wrangler secret put <name> --env <env>`.
+#   Ver `docs/runbooks/secret-rotation.md`.
+# - Bindings (D1, KV, R2, Queues, Durable Objects) se añaden en el sprint que
+#   los necesite, una vez creados los recursos en CF dashboard.
 
 [observability]
 enabled = true
 
+[vars]
+ENVIRONMENT = "dev"
+LOG_LEVEL = "debug"
+
+# --- Environments -----------------------------------------------------------
+
 [env.staging]
 name = "moneto-api-staging"
+# routes = [{ pattern = "api-staging.moneto.xyz/*", zone_name = "moneto.xyz" }]
+# (descomentar cuando el zone esté en Cloudflare y el DNS apunte)
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+LOG_LEVEL = "info"
+
+[env.staging.observability]
+enabled = true
+
+# Secrets (vía `wrangler secret put --env staging`):
+#   PRIVY_APP_SECRET           — Privy server-side
+#   SUPABASE_SERVICE_ROLE_KEY  — Supabase admin
+#   HELIUS_API_KEY             — Solana RPC + indexing
+#   CHAINALYSIS_API_KEY        — sanctions screening
+#   JUPITER_API_KEY            — swap quotes (si tier paga)
+#   BOLD_API_KEY               — Colombia rails
+#   RAIN_API_KEY               — card issuance
+#   SENTRY_DSN                 — error reporting
+#   AXIOM_TOKEN                — log aggregation
+
+# KV namespaces (placeholders — provisionar en CF dashboard primero,
+# luego pegar el id):
+# [[env.staging.kv_namespaces]]
+# binding = "RATE_LIMITS"
+# id = "TBD"
+
+# D1 (post-MVP si necesitamos un cache server-side):
+# [[env.staging.d1_databases]]
+# binding = "CACHE"
+# database_name = "moneto-cache-staging"
+# database_id = "TBD"
 
 [env.production]
 name = "moneto-api"
+# routes = [{ pattern = "api.moneto.xyz/*", zone_name = "moneto.xyz" }]
+
+[env.production.vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "warn"
+
+[env.production.observability]
+enabled = true
+
+# [[env.production.kv_namespaces]]
+# binding = "RATE_LIMITS"
+# id = "TBD"

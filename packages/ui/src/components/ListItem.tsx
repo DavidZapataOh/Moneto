@@ -1,14 +1,12 @@
+import { durations, radius } from "@moneto/theme";
 import { forwardRef, useCallback } from "react";
 import { Pressable, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
-import { durations, radius } from "@moneto/theme";
-import { Text } from "./Text";
-import { useTheme } from "../hooks/useTheme";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+
 import { haptics, type HapticPattern } from "../hooks/useHaptics";
+import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export interface ListItemProps {
   /** Slot izquierdo (icono, avatar, etc.). */
@@ -129,10 +127,7 @@ export const ListItem = forwardRef<View, ListItemProps>(function ListItem(
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
       testID={testID}
-      style={[
-        animatedStyle,
-        { borderRadius: radius.sm, paddingHorizontal: 4, minHeight: 44 },
-      ]}
+      style={[animatedStyle, { borderRadius: radius.sm, paddingHorizontal: 4, minHeight: 44 }]}
     >
       {content}
     </AnimatedPressable>

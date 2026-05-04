@@ -1,10 +1,7 @@
-import { View } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Screen } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { IconButton } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
+import { Screen, Text, IconButton, useTheme } from "@moneto/ui";
+import { useRouter } from "expo-router";
+import { View } from "react-native";
 
 /**
  * Swap modal — placeholder MVP.

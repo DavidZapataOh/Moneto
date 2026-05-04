@@ -29,11 +29,11 @@ apps/programs/
 
 ## Comandos
 
-| Comando | Acción |
-|---|---|
-| `pnpm --filter @moneto/programs build` | `anchor build` |
-| `pnpm --filter @moneto/programs test` | `anchor test` (localnet) |
-| `pnpm --filter @moneto/programs deploy` | `anchor deploy` |
+| Comando                                 | Acción                   |
+| --------------------------------------- | ------------------------ |
+| `pnpm --filter @moneto/programs build`  | `anchor build`           |
+| `pnpm --filter @moneto/programs test`   | `anchor test` (localnet) |
+| `pnpm --filter @moneto/programs deploy` | `anchor deploy`          |
 
 ## Por qué Anchor (vs raw Solana)
 

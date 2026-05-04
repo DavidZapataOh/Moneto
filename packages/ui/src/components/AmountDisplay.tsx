@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { View } from "react-native";
+
 import { Text, type TextTone } from "./Text";
 
 export type AmountSize = "hero" | "primary" | "secondary";

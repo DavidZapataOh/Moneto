@@ -1,6 +1,7 @@
+import { type, fonts } from "@moneto/theme";
 import { forwardRef } from "react";
 import { Text as RNText, type TextProps as RNTextProps, type TextStyle } from "react-native";
-import { type, fonts } from "@moneto/theme";
+
 import { useTheme } from "../hooks/useTheme";
 
 export type TextVariant =

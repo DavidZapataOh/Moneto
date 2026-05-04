@@ -8,6 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
+
 import { useTheme } from "../hooks/useTheme";
 
 export type ScreenBg = "primary" | "elevated" | "sunken";
@@ -86,10 +87,7 @@ export const Screen = forwardRef<View, ScreenProps>(function Screen(
   return (
     <SafeAreaView edges={edges} style={{ flex: 1, backgroundColor: bgColor }}>
       {Platform.OS === "android" && (
-        <StatusBar
-          backgroundColor={bgColor}
-          barStyle={isDark ? "light-content" : "dark-content"}
-        />
+        <StatusBar backgroundColor={bgColor} barStyle={isDark ? "light-content" : "dark-content"} />
       )}
       {scroll ? (
         <ScrollView

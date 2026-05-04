@@ -5,6 +5,7 @@ Shared domain types and Zod schemas for the Moneto monorepo.
 ## Purpose
 
 Single source of truth for runtime-validated data shapes across:
+
 - Mobile app (Expo)
 - Backend API (Hono on Cloudflare Workers)
 - Web app (Next.js)

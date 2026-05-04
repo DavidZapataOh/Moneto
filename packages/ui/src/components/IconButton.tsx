@@ -1,13 +1,10 @@
+import { hitSlop, springs } from "@moneto/theme";
 import { forwardRef, useCallback } from "react";
 import { Pressable, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
-import { hitSlop, springs } from "@moneto/theme";
-import { useTheme } from "../hooks/useTheme";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+
 import { haptics, type HapticPattern } from "../hooks/useHaptics";
+import { useTheme } from "../hooks/useTheme";
 
 export type IconButtonVariant = "ghost" | "filled" | "outlined";
 export type IconButtonSize = "sm" | "md" | "lg";

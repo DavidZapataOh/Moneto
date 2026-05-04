@@ -29,12 +29,12 @@ function App() {
 
 ## Componentes
 
-| Categoría | Componentes |
-|---|---|
-| Primitives | `PressableScale` |
-| Display | `Text`, `Avatar`, `Badge`, `Logo`, `AmountDisplay` |
-| Layout | `Screen`, `Card`, `Divider`, `ScreenHeader`, `SectionHeader`, `ListItem` |
-| Forms | `Button`, `IconButton`, `Input` (+ `ClearButton`), `Toggle` |
+| Categoría  | Componentes                                                              |
+| ---------- | ------------------------------------------------------------------------ |
+| Primitives | `PressableScale`                                                         |
+| Display    | `Text`, `Avatar`, `Badge`, `Logo`, `AmountDisplay`                       |
+| Layout     | `Screen`, `Card`, `Divider`, `ScreenHeader`, `SectionHeader`, `ListItem` |
+| Forms      | `Button`, `IconButton`, `Input` (+ `ClearButton`), `Toggle`              |
 
 Sprint 2 amplía con: `AnimatedTabIcon`, `Skeleton`, `EmptyState`,
 `ErrorState`, `ErrorBoundary`, `AnimatedNumber`, `BottomSheet`,
@@ -65,15 +65,25 @@ Sprint 2 amplía con: `AnimatedTabIcon`, `Skeleton`, `EmptyState`,
 ```ts
 import {
   // colors
-  palette, lightTheme, darkTheme, type ThemeColors, type ThemeMode,
+  palette,
+  lightTheme,
+  darkTheme,
+  type ThemeColors,
+  type ThemeMode,
   // typography
-  fonts, type, // (variant map: heroDisplay, body, balanceHero, etc.)
+  fonts,
+  type, // (variant map: heroDisplay, body, balanceHero, etc.)
   // layout
-  space, hitSlop, radius,
+  space,
+  hitSlop,
+  radius,
   // motion
-  durations, easings, springs,
+  durations,
+  easings,
+  springs,
   // elevation
-  shadows, getShadow,
+  shadows,
+  getShadow,
 } from "@moneto/theme";
 ```
 

@@ -1,12 +1,5 @@
-import { useMemo, useState } from "react";
-import { View, Pressable, TextInput, Keyboard } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, {
-  FadeInDown,
-  FadeIn,
-  LinearTransition,
-} from "react-native-reanimated";
+import { fonts } from "@moneto/theme";
 import {
   Screen,
   Text,
@@ -19,8 +12,13 @@ import {
   useTheme,
   haptics,
 } from "@moneto/ui";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useMemo, useState } from "react";
+import { View, Pressable, TextInput, Keyboard } from "react-native";
+import Animated, { FadeInDown, FadeIn, LinearTransition } from "react-native-reanimated";
+
 import { useAppStore } from "@stores/useAppStore";
-import { fonts } from "@moneto/theme";
+
 import type { User } from "@data/mock";
 
 type Mode = "p2p" | "cashout";
@@ -41,16 +39,17 @@ export default function SendScreen() {
   const [query, setQuery] = useState("");
 
   const amountNumber = Number(amount) || 0;
-  const canSend = amountNumber > 0 && amountNumber <= balance.availableUsd && (mode === "cashout" || !!selected);
+  const canSend =
+    amountNumber > 0 && amountNumber <= balance.availableUsd && (mode === "cashout" || !!selected);
 
   const filtered = useMemo(
     () =>
       contacts.filter(
         (c) =>
           c.name.toLowerCase().includes(query.toLowerCase()) ||
-          c.handle.toLowerCase().includes(query.toLowerCase())
+          c.handle.toLowerCase().includes(query.toLowerCase()),
       ),
-    [contacts, query]
+    [contacts, query],
   );
 
   const handleSend = () => {
@@ -63,7 +62,7 @@ export default function SendScreen() {
       pathname: "/send-success",
       params: {
         amount: amountNumber.toString(),
-        to: mode === "cashout" ? "Bancolombia •••• 0284" : selected?.name ?? "",
+        to: mode === "cashout" ? "Bancolombia •••• 0284" : (selected?.name ?? ""),
         mode,
       },
     });
@@ -164,9 +163,17 @@ export default function SendScreen() {
               USD
             </Text>
           </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginTop: 8,
+            }}
+          >
             <Text variant="bodySmall" tone="tertiary">
-              Disponible: ${balance.availableUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+              Disponible: $
+              {balance.availableUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}
             </Text>
             <Pressable
               onPress={() => {
@@ -196,9 +203,7 @@ export default function SendScreen() {
                 value={query}
                 onChangeText={setQuery}
                 placeholder="Buscá por nombre o @usuario"
-                leftSlot={
-                  <Ionicons name="search" size={16} color={colors.text.tertiary} />
-                }
+                leftSlot={<Ionicons name="search" size={16} color={colors.text.tertiary} />}
                 accessibilityLabel="Buscar contacto"
               />
               <View style={{ gap: 2, marginTop: 8 }}>
@@ -310,9 +315,7 @@ export default function SendScreen() {
         fullWidth
         disabled={!canSend}
         onPress={handleSend}
-        rightIcon={
-          <Ionicons name="arrow-forward" size={18} color={colors.text.inverse} />
-        }
+        rightIcon={<Ionicons name="arrow-forward" size={18} color={colors.text.inverse} />}
       />
     </Screen>
   );

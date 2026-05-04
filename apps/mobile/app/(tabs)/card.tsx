@@ -1,29 +1,31 @@
+import { Ionicons } from "@expo/vector-icons";
+import { fonts } from "@moneto/theme";
+import {
+  Screen,
+  ScreenHeader,
+  SectionHeader,
+  Text,
+  Card,
+  Divider,
+  useTheme,
+  haptics,
+} from "@moneto/ui";
+import * as Clipboard from "expo-clipboard";
 import { useState } from "react";
 import { View, Pressable } from "react-native";
-import * as Clipboard from "expo-clipboard";
-import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
-import { Screen } from "@moneto/ui";
-import { ScreenHeader, SectionHeader } from "@moneto/ui";
-import { Text } from "@moneto/ui";
-import { Card } from "@moneto/ui";
-import { Divider } from "@moneto/ui";
-import { VirtualCard } from "@components/features/VirtualCard";
+
 import { TransactionRow } from "@components/features/TransactionRow";
-import { useAppStore } from "@stores/useAppStore";
-import { useTheme } from "@moneto/ui";
+import { VirtualCard } from "@components/features/VirtualCard";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
-import { haptics } from "@moneto/ui";
-import { fonts } from "@moneto/theme";
+import { useAppStore } from "@stores/useAppStore";
 
 const SECTION_GAP = 32;
 
 export default function CardScreen() {
   const { colors } = useTheme();
   const card = useAppStore((s) => s.card);
-  const transactions = useAppStore((s) => s.transactions).filter(
-    (t) => t.type === "card"
-  );
+  const transactions = useAppStore((s) => s.transactions).filter((t) => t.type === "card");
   const [showDetails, setShowDetails] = useState(false);
   const [frozen, setFrozen] = useState(false);
   const bottomSpace = useTabBarSpace();
@@ -104,11 +106,7 @@ export default function CardScreen() {
             setFrozen((f) => !f);
           }}
         />
-        <CardAction
-          icon="settings-outline"
-          label="Ajustes"
-          onPress={() => haptics.tap()}
-        />
+        <CardAction icon="settings-outline" label="Ajustes" onPress={() => haptics.tap()} />
       </Animated.View>
 
       {/* Daily usage card */}
@@ -180,11 +178,7 @@ export default function CardScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Ionicons
-                  name="receipt-outline"
-                  size={20}
-                  color={colors.text.tertiary}
-                />
+                <Ionicons name="receipt-outline" size={20} color={colors.text.tertiary} />
               </View>
               <Text variant="bodySmall" tone="tertiary">
                 Aún sin gastos hoy

@@ -1,6 +1,7 @@
+import { hitSlop } from "@moneto/theme";
 import { forwardRef } from "react";
 import { Pressable, View } from "react-native";
-import { hitSlop } from "@moneto/theme";
+
 import { Text } from "./Text";
 
 export interface ScreenHeaderProps {

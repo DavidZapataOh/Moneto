@@ -1,0 +1,42 @@
+# Moneto CODEOWNERS
+#
+# Reglas:
+# - Cada pattern matchea desde la raíz del repo (no desde el dir actual).
+# - Más específico gana (la última línea que matchea decide).
+# - Owners pueden ser usernames @gh o teams @org/team.
+#
+# Reemplazá `@DavidZapataOh` con tu handle real cuando crees el equipo.
+# Cuando entren contributors, agregá teams (e.g., @moneto/solana-eng) y
+# moveles los paths que les correspondan.
+
+# Default — todo PR requiere review del founder/lead.
+*                                       @DavidZapataOh
+
+# On-chain code requiere Solana eng review (cuando exista el team).
+apps/programs/                          @DavidZapataOh
+packages/solana/                        @DavidZapataOh
+
+# Privacy-critical code (Umbra, viewing keys, compliance bridges) requiere
+# revisión doble. Cuando llegue el sprint 5+ esto se llena.
+# packages/solana/src/umbra/            @DavidZapataOh @security-eng
+
+# Auth + compliance (PII, KYC, Privy/Supabase compartmentalization).
+apps/api/src/auth/                      @DavidZapataOh
+apps/api/src/compliance/                @DavidZapataOh
+
+# Infra / config / CI — protegido para que cambios de pipeline pasen
+# por el founder.
+.github/                                @DavidZapataOh
+turbo.json                              @DavidZapataOh
+pnpm-workspace.yaml                     @DavidZapataOh
+package.json                            @DavidZapataOh
+.npmrc                                  @DavidZapataOh
+commitlint.config.js                    @DavidZapataOh
+
+# Design system — cambios al theme o a los componentes base afectan a
+# todos los downstream. Founder review.
+packages/theme/                         @DavidZapataOh
+packages/ui/                            @DavidZapataOh
+
+# Plans + runbooks — process docs.
+docs/runbooks/                          @DavidZapataOh

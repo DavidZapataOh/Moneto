@@ -22,10 +22,7 @@ export { useTheme } from "./hooks/useTheme";
 export { useHaptics, haptics, type HapticPattern } from "./hooks/useHaptics";
 
 // Primitives
-export {
-  PressableScale,
-  type PressableScaleProps,
-} from "./components/PressableScale";
+export { PressableScale, type PressableScaleProps } from "./components/PressableScale";
 
 // Display
 export { Text, type TextProps, type TextVariant, type TextTone } from "./components/Text";
@@ -52,17 +49,18 @@ export {
 export { ListItem, type ListItemProps } from "./components/ListItem";
 
 // Forms
-export {
-  Button,
-  type ButtonProps,
-  type ButtonVariant,
-  type ButtonSize,
-} from "./components/Button";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/Button";
 export {
   IconButton,
   type IconButtonProps,
   type IconButtonVariant,
   type IconButtonSize,
 } from "./components/IconButton";
-export { Input, ClearButton, type InputProps, type InputVariant, type InputSize } from "./components/Input";
+export {
+  Input,
+  ClearButton,
+  type InputProps,
+  type InputVariant,
+  type InputSize,
+} from "./components/Input";
 export { Toggle, type ToggleProps, type ToggleSize } from "./components/Toggle";

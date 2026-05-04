@@ -23,12 +23,7 @@ export const AssetIdSchema = z.enum([
 ]);
 export type AssetId = z.infer<typeof AssetIdSchema>;
 
-export const AssetCategorySchema = z.enum([
-  "stable_usd",
-  "stable_local",
-  "stable_eur",
-  "volatile",
-]);
+export const AssetCategorySchema = z.enum(["stable_usd", "stable_local", "stable_eur", "volatile"]);
 export type AssetCategory = z.infer<typeof AssetCategorySchema>;
 
 /**

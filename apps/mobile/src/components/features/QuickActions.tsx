@@ -1,15 +1,13 @@
-import { View, Pressable } from "react-native";
-import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Text, useTheme, haptics } from "@moneto/ui";
+import { useRouter, type Href } from "expo-router";
+import { View, Pressable } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { Text } from "@moneto/ui";
-import { useTheme } from "@moneto/ui";
-import { haptics } from "@moneto/ui";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -66,7 +64,7 @@ function ActionButton({ action }: { action: QuickAction }) {
 
   const onPress = () => {
     haptics.tap();
-    router.push(action.route as any);
+    router.push(action.route as Href);
   };
 
   return (
@@ -104,11 +102,7 @@ function ActionButton({ action }: { action: QuickAction }) {
         ]}
       />
       <Ionicons name={action.icon} size={20} color={colors.text.primary} />
-      <Text
-        variant="label"
-        tone="secondary"
-        style={{ fontSize: 11, letterSpacing: 0.4 }}
-      >
+      <Text variant="label" tone="secondary" style={{ fontSize: 11, letterSpacing: 0.4 }}>
         {action.label}
       </Text>
     </AnimatedPressable>

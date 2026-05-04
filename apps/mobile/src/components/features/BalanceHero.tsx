@@ -1,3 +1,6 @@
+import { Ionicons } from "@expo/vector-icons";
+import { fonts } from "@moneto/theme";
+import { Text, useTheme, haptics } from "@moneto/ui";
 import { useEffect } from "react";
 import { View, Pressable } from "react-native";
 import Animated, {
@@ -6,9 +9,6 @@ import Animated, {
   Easing,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { Ionicons } from "@expo/vector-icons";
-import { Text, useTheme, haptics } from "@moneto/ui";
-import { fonts } from "@moneto/theme";
 
 interface BalanceHeroProps {
   balance: number;
@@ -24,12 +24,7 @@ interface BalanceHeroProps {
  * - Solo 2 weights (500 medium y 400 regular)
  * - Una emphasis: el número del saldo
  */
-export function BalanceHero({
-  balance,
-  yieldApy,
-  hidden,
-  onToggleVisibility,
-}: BalanceHeroProps) {
+export function BalanceHero({ balance, yieldApy, hidden, onToggleVisibility }: BalanceHeroProps) {
   const { colors } = useTheme();
 
   const yieldAccrued = useSharedValue(0);

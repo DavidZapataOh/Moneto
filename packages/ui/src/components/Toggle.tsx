@@ -1,3 +1,4 @@
+import { springs, durations } from "@moneto/theme";
 import { useEffect, useCallback } from "react";
 import { Pressable, View, type AccessibilityProps } from "react-native";
 import Animated, {
@@ -6,13 +7,16 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { springs, durations } from "@moneto/theme";
-import { useTheme } from "../hooks/useTheme";
+
 import { haptics } from "../hooks/useHaptics";
+import { useTheme } from "../hooks/useTheme";
 
 export type ToggleSize = "sm" | "md";
 
-export interface ToggleProps extends Pick<AccessibilityProps, "accessibilityLabel" | "accessibilityHint"> {
+export interface ToggleProps extends Pick<
+  AccessibilityProps,
+  "accessibilityLabel" | "accessibilityHint"
+> {
   /** Estado actual. Controlled. */
   value: boolean;
   /** Callback con el nuevo estado. */

@@ -1,4 +1,5 @@
 import { Redirect } from "expo-router";
+
 import { useAppStore } from "@stores/useAppStore";
 
 export default function Root() {

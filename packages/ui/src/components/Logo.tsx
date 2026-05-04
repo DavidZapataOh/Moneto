@@ -1,7 +1,9 @@
 import { forwardRef } from "react";
 import { Image, View, type ImageSourcePropType } from "react-native";
-import { Text } from "./Text";
+
 import { useTheme } from "../hooks/useTheme";
+
+import { Text } from "./Text";
 
 export type LogoVariant = "mark" | "wordmark" | "full";
 export type LogoTone = "brand" | "inverse" | "primary";
@@ -89,11 +91,7 @@ export const Logo = forwardRef<View, LogoProps>(function Logo(
       style={{ flexDirection: "row", alignItems: "center", gap: size * 0.25 }}
     >
       {Mark}
-      <Text
-        variant="wordmark"
-        accessibilityLabel="Moneto"
-        style={{ color, fontSize: size * 0.8 }}
-      >
+      <Text variant="wordmark" accessibilityLabel="Moneto" style={{ color, fontSize: size * 0.8 }}>
         Moneto
       </Text>
     </View>

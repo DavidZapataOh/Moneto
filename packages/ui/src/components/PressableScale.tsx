@@ -1,3 +1,4 @@
+import { springs, durations } from "@moneto/theme";
 import { forwardRef, useCallback } from "react";
 import { Pressable, type PressableProps, type View } from "react-native";
 import Animated, {
@@ -6,13 +7,15 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { springs, durations } from "@moneto/theme";
+
 import { haptics, type HapticPattern } from "../hooks/useHaptics";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export interface PressableScaleProps
-  extends Omit<PressableProps, "style" | "children" | "onPress"> {
+export interface PressableScaleProps extends Omit<
+  PressableProps,
+  "style" | "children" | "onPress"
+> {
   /** Contenido. */
   children: React.ReactNode;
   /** Cuánto se encoge al pulsar. Default 0.97 (sutil). */
@@ -39,61 +42,59 @@ export interface PressableScaleProps
  *     <Card>...</Card>
  *   </PressableScale>
  */
-export const PressableScale = forwardRef<View, PressableScaleProps>(
-  function PressableScale(
-    {
-      children,
-      scaleTo = 0.97,
-      pressedOpacity = 0.85,
-      haptic = "tap",
-      onPress,
-      disabled,
-      style,
-      testID,
-      ...rest
-    },
-    ref,
-  ) {
-    const scale = useSharedValue(1);
-    const opacity = useSharedValue(1);
-
-    const handlePressIn = useCallback(() => {
-      scale.value = withSpring(scaleTo, springs.tap);
-      opacity.value = withTiming(pressedOpacity, { duration: durations.instant });
-    }, [scale, opacity, scaleTo, pressedOpacity]);
-
-    const handlePressOut = useCallback(() => {
-      scale.value = withSpring(1, springs.tap);
-      opacity.value = withTiming(1, { duration: durations.fast });
-    }, [scale, opacity]);
-
-    const handlePress = useCallback(() => {
-      if (disabled) return;
-      if (haptic) haptics[haptic]();
-      onPress?.();
-    }, [disabled, haptic, onPress]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-      opacity: opacity.value,
-    }));
-
-    return (
-      <AnimatedPressable
-        ref={ref as never}
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled}
-        accessibilityState={disabled ? { disabled: true } : undefined}
-        testID={testID}
-        style={[animatedStyle, style as never]}
-        {...rest}
-      >
-        {children}
-      </AnimatedPressable>
-    );
+export const PressableScale = forwardRef<View, PressableScaleProps>(function PressableScale(
+  {
+    children,
+    scaleTo = 0.97,
+    pressedOpacity = 0.85,
+    haptic = "tap",
+    onPress,
+    disabled,
+    style,
+    testID,
+    ...rest
   },
-);
+  ref,
+) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  const handlePressIn = useCallback(() => {
+    scale.value = withSpring(scaleTo, springs.tap);
+    opacity.value = withTiming(pressedOpacity, { duration: durations.instant });
+  }, [scale, opacity, scaleTo, pressedOpacity]);
+
+  const handlePressOut = useCallback(() => {
+    scale.value = withSpring(1, springs.tap);
+    opacity.value = withTiming(1, { duration: durations.fast });
+  }, [scale, opacity]);
+
+  const handlePress = useCallback(() => {
+    if (disabled) return;
+    if (haptic) haptics[haptic]();
+    onPress?.();
+  }, [disabled, haptic, onPress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <AnimatedPressable
+      ref={ref as never}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+      accessibilityState={disabled ? { disabled: true } : undefined}
+      testID={testID}
+      style={[animatedStyle, style as never]}
+      {...rest}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+});
 
 PressableScale.displayName = "PressableScale";

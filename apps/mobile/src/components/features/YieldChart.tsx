@@ -1,6 +1,7 @@
-import { View } from "react-native";
-import Svg, { Path, Defs, LinearGradient as SvgGrad, Stop, Circle } from "react-native-svg";
 import { useTheme } from "@moneto/ui";
+import { View } from "react-native";
+// eslint-disable-next-line import/no-named-as-default -- react-native-svg exports both default and named `Svg` (library convention).
+import Svg, { Path, Defs, LinearGradient as SvgGrad, Stop, Circle } from "react-native-svg";
 
 interface YieldChartProps {
   points: number[]; // valores normalizados
@@ -60,13 +61,7 @@ export function YieldChart({ points, height = 80 }: YieldChartProps) {
           strokeLinejoin="round"
         />
         <Circle cx={last.x} cy={last.y} r={4} fill={color} />
-        <Circle
-          cx={last.x}
-          cy={last.y}
-          r={8}
-          fill={color}
-          opacity={0.25}
-        />
+        <Circle cx={last.x} cy={last.y} r={8} fill={color} opacity={0.25} />
       </Svg>
     </View>
   );
