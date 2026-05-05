@@ -1,9 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
+import { type AssetId } from "@moneto/types";
 import { Text, useTheme, haptics } from "@moneto/ui";
 import { useRouter, type Href } from "expo-router";
 import { useMemo } from "react";
 import { ScrollView, View, Pressable } from "react-native";
+
+import { useAssetPreferences } from "@hooks/useAssetPreferences";
 
 import { AssetIcon } from "./AssetIcon";
 
@@ -27,21 +30,49 @@ interface AssetStripProps {
  */
 export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
   const router = useRouter();
+  const prefs = useAssetPreferences();
 
   // Memoizamos sort + slice — recreaba un array nuevo en cada render
   // del parent (e.g., refresh, tab change). Con memo, identidad
   // estable mientras `assets` no cambie.
+  //
+  // Sprint 3.07: los `hidden_assets` del user se aplican como filtro
+  // antes de ordenar. Si las prefs aún no están cargadas (cold start),
+  // mostramos la lista completa — better UX que mostrar empty state.
+  const hidden = prefs.data?.hidden_assets;
+  const priorityOrder = prefs.data?.asset_priority_order;
   const { visible, hasMore } = useMemo(() => {
-    const sorted = [...assets].sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return b.balanceUsd - a.balanceUsd;
-    });
+    const filtered =
+      hidden && hidden.length > 0
+        ? assets.filter((a) => !hidden.includes(a.id as AssetId))
+        : assets;
+
+    // Si tenemos un priority order del user, lo usamos como sort key
+    // primario. Items dentro de la misma posición de prioridad caen al
+    // final del orden natural por USD descending.
+    let sorted: Asset[];
+    if (priorityOrder && priorityOrder.length > 0) {
+      const indexOf = new Map<string, number>(priorityOrder.map((id, i) => [id, i]));
+      sorted = [...filtered].sort((a, b) => {
+        const ai = indexOf.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+        const bi = indexOf.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        return b.balanceUsd - a.balanceUsd;
+      });
+    } else {
+      // Fallback (prefs aún no cargadas): USD pinned + USD descending.
+      sorted = [...filtered].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.balanceUsd - a.balanceUsd;
+      });
+    }
+
     return {
       visible: sorted.slice(0, maxVisible),
       hasMore: sorted.length > maxVisible,
     };
-  }, [assets, maxVisible]);
+  }, [assets, maxVisible, hidden, priorityOrder]);
 
   const handleAssetPress = (assetId: string) => {
     haptics.tap();

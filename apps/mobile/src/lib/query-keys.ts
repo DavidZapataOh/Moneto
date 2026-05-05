@@ -33,6 +33,8 @@ export const queryKeys = {
   profile: () => ["profile"] as const,
   /** User preferences (theme, language, balance_hidden). */
   preferences: () => ["preferences"] as const,
+  /** Asset routing prefs (priority order, hidden assets, default send). */
+  assetPreferences: () => ["asset-preferences"] as const,
 
   // ── Money ────────────────────────────────────────────────────────────
   /** Balance agregado USD + APY. */

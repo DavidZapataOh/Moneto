@@ -66,6 +66,12 @@ type UserPreferencesRow = {
   notifications_email: boolean;
   balance_hidden: boolean;
   default_asset: string;
+  /** Sprint 3.07 — orden en que el payment router consume assets. */
+  asset_priority_order: string[];
+  /** Sprint 3.07 — assets que el user oculta de la UI (no afecta on-chain). */
+  hidden_assets: string[];
+  /** Sprint 3.07 — pre-selección en Send. */
+  default_send_asset: string;
   updated_at: Timestamptz;
 };
 
@@ -77,6 +83,9 @@ type UserPreferencesInsert = {
   notifications_email?: boolean;
   balance_hidden?: boolean;
   default_asset?: string;
+  asset_priority_order?: string[];
+  hidden_assets?: string[];
+  default_send_asset?: string;
 };
 
 type UserPreferencesUpdate = Partial<UserPreferencesInsert>;

@@ -21,6 +21,7 @@ import { AssetDonut } from "@components/features/AssetDonut";
 import { AssetRow } from "@components/features/AssetRow";
 import { EmptyAssets } from "@components/features/EmptyAssets";
 import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
+import { useAssetPreferences } from "@hooks/useAssetPreferences";
 import { useAssetsData } from "@hooks/useAssetsData";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { useAppStore } from "@stores/useAppStore";
@@ -55,12 +56,30 @@ export default function ActivosScreen() {
   const data = useAssetsData();
 
   const motion = useEntrances();
+  const prefs = useAssetPreferences();
+  // Sprint 3.07: aplicamos `hidden_assets` + `asset_priority_order` del user.
+  // El sort secundario por isEarning sigue intacto — la sección Rindiendo
+  // siempre va antes de Holdings, pero dentro de cada sección respetamos
+  // el orden del user.
+  const visibleAssets = useMemo(() => {
+    const hidden = new Set(prefs.data?.hidden_assets ?? []);
+    const order = prefs.data?.asset_priority_order ?? [];
+    const indexOf = new Map<string, number>(order.map((id, i) => [id, i]));
+    return data.assets
+      .filter((a) => !hidden.has(a.id))
+      .sort((a, b) => {
+        const ai = indexOf.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+        const bi = indexOf.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+        if (ai !== bi) return ai - bi;
+        return b.balanceUsd - a.balanceUsd;
+      });
+  }, [data.assets, prefs.data]);
   // Memoizamos los splits para que las `AssetRow` (memoized) reciban
   // referencias estables — sin esto, cada render del Activos crearía
   // arrays nuevos y forzaría re-render de las 9 rows aún si el data
   // del asset es el mismo.
-  const earning = useMemo(() => data.assets.filter((a) => a.isEarning), [data.assets]);
-  const holdings = useMemo(() => data.assets.filter((a) => !a.isEarning), [data.assets]);
+  const earning = useMemo(() => visibleAssets.filter((a) => a.isEarning), [visibleAssets]);
+  const holdings = useMemo(() => visibleAssets.filter((a) => !a.isEarning), [visibleAssets]);
   const isEmpty = data.totalPatrimonioUsd === 0;
   const change24h = data.change24hUsd;
   const changePct = data.change24hPct;

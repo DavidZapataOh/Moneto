@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { AssetIdSchema, type AssetId, type SolanaNetwork } from "@moneto/types";
 import { createLogger } from "@moneto/utils";
 import { PublicKey } from "@solana/web3.js";
 import { Hono } from "hono";
@@ -12,7 +13,6 @@ import { createBalanceService, type BalanceServiceEnv } from "../services/balanc
 import { createPriceService } from "../services/price-service";
 
 import type { Database, ThemePreference, LanguagePreference, UserPreferences } from "@moneto/db";
-import type { SolanaNetwork } from "@moneto/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const log = createLogger("api.me");
@@ -133,6 +133,162 @@ me.put("/preferences", zValidator("json", PutPreferencesSchema), async (c) => {
 
   return c.json(data);
 });
+
+// ─── /api/me/asset-preferences ──────────────────────────────────────────────
+//
+// Asset routing config (Sprint 3.07):
+// - `asset_priority_order` — orden en que el payment router consume saldo.
+// - `hidden_assets`        — assets ocultos del UI (no afecta on-chain).
+// - `default_send_asset`   — pre-selección en Send screen.
+
+const DEFAULT_ASSET_ORDER: readonly AssetId[] = [
+  "usd",
+  "eur",
+  "cop",
+  "mxn",
+  "brl",
+  "ars",
+  "sol",
+  "btc",
+  "eth",
+] as const;
+
+interface AssetPrefsResponse {
+  asset_priority_order: AssetId[];
+  hidden_assets: AssetId[];
+  default_send_asset: AssetId;
+  updated_at: string;
+}
+
+const PutAssetPrefsSchema = z
+  .object({
+    asset_priority_order: z
+      .array(AssetIdSchema)
+      .min(1, "asset_priority_order must contain at least one asset")
+      .max(20, "asset_priority_order too large")
+      .optional(),
+    hidden_assets: z.array(AssetIdSchema).max(20, "hidden_assets too large").optional(),
+    default_send_asset: AssetIdSchema.optional(),
+  })
+  .strict()
+  .refine((obj) => Object.keys(obj).length > 0, {
+    message: "at least one preference field is required",
+  })
+  .superRefine((obj, ctx) => {
+    // Cross-field invariant: default_send_asset no puede estar oculto en
+    // la misma request. Sino el `before update` trigger lo rechaza con un
+    // 23514 que el caller no puede mappear well.
+    if (
+      obj.default_send_asset &&
+      obj.hidden_assets &&
+      obj.hidden_assets.includes(obj.default_send_asset)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["default_send_asset"],
+        message: "default_send_asset cannot be in hidden_assets",
+      });
+    }
+    // No duplicates en priority order — el payment router asume keys únicas.
+    if (obj.asset_priority_order) {
+      const set = new Set(obj.asset_priority_order);
+      if (set.size !== obj.asset_priority_order.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["asset_priority_order"],
+          message: "asset_priority_order must not contain duplicates",
+        });
+      }
+    }
+  });
+
+me.get("/asset-preferences", async (c) => {
+  const userId = requireUserId(c);
+  const supabase = createSupabaseAdminClient(c.env);
+
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("asset_priority_order, hidden_assets, default_send_asset, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    log.error("asset prefs fetch failed", { code: error.code, hint: error.hint });
+    throw new HTTPException(500, { message: "asset_preferences_fetch_failed" });
+  }
+
+  if (!data) {
+    // No row yet — return defaults sintéticos. El cliente persiste cuando
+    // el user toque algo. `updated_at` epoch 0 → cualquier write local
+    // gana en LWW.
+    const fallback: AssetPrefsResponse = {
+      asset_priority_order: [...DEFAULT_ASSET_ORDER],
+      hidden_assets: [],
+      default_send_asset: "usd",
+      updated_at: new Date(0).toISOString(),
+    };
+    return c.json(fallback);
+  }
+
+  // Normalizamos: la DB acepta cualquier `text[]` pero el contrato del
+  // wire es AssetId. Filtramos values que no estén en el enum (asset
+  // deprecado entre versions, junk inserted manualmente). Si el filtrado
+  // dejaría el array vacío, fallback al default. Esto es defense-in-depth
+  // — el zod schema del PUT ya valida en input.
+  const normalizedOrder = (data.asset_priority_order as string[]).filter(isAssetIdValue);
+  const order: AssetId[] = normalizedOrder.length > 0 ? normalizedOrder : [...DEFAULT_ASSET_ORDER];
+  const hidden = (data.hidden_assets as string[]).filter(isAssetIdValue);
+  const defaultSend: AssetId = isAssetIdValue(data.default_send_asset)
+    ? data.default_send_asset
+    : "usd";
+
+  const response: AssetPrefsResponse = {
+    asset_priority_order: order,
+    hidden_assets: hidden,
+    default_send_asset: defaultSend,
+    updated_at: data.updated_at,
+  };
+  return c.json(response);
+});
+
+me.put("/asset-preferences", zValidator("json", PutAssetPrefsSchema), async (c) => {
+  const userId = requireUserId(c);
+  const updates = stripUndefined(c.req.valid("json"));
+  const supabase = createSupabaseAdminClient(c.env);
+
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" })
+    .select("asset_priority_order, hidden_assets, default_send_asset, updated_at")
+    .single();
+
+  if (error) {
+    // 23503 → FK (profile no existe todavía). 23514 → check constraint del
+    // trigger `enforce_asset_prefs_invariants` (e.g., default_send_asset
+    // ya hidden por write previo). Ambos los mapeamos a 409 para que el
+    // mobile re-evalúe y reintente.
+    const isFkViolation = error.code === "23503";
+    const isCheckViolation = error.code === "23514";
+    log.warn("asset prefs upsert failed", {
+      code: error.code,
+      isFkViolation,
+      isCheckViolation,
+    });
+    if (isFkViolation) {
+      throw new HTTPException(409, { message: "profile_not_provisioned" });
+    }
+    if (isCheckViolation) {
+      throw new HTTPException(409, { message: "asset_prefs_invariant_violation" });
+    }
+    throw new HTTPException(500, { message: "asset_preferences_update_failed" });
+  }
+
+  return c.json(data);
+});
+
+function isAssetIdValue(value: unknown): value is AssetId {
+  return AssetIdSchema.safeParse(value).success;
+}
 
 // ─── /api/me/balance ────────────────────────────────────────────────────────
 
