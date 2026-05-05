@@ -10,7 +10,9 @@
     ".": "./src/index.ts",
     "./domain/asset": "./src/domain/asset.ts",
     "./domain/transaction": "./src/domain/transaction.ts",
-    "./domain/user": "./src/domain/user.ts"
+    "./domain/user": "./src/domain/user.ts",
+    "./assets": "./src/assets.ts",
+    "./asset-helpers": "./src/asset-helpers.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

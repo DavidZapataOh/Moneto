@@ -8,3 +8,9 @@
 export * from "./domain/asset";
 export * from "./domain/transaction";
 export * from "./domain/user";
+
+// Asset registry + helpers — fuente de verdad de mints, decimals,
+// metadata visual. Toda app (mobile, api, on-chain orchestrator)
+// importa de acá en lugar de hardcodes.
+export * from "./assets";
+export * from "./asset-helpers";
