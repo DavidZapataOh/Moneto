@@ -8,6 +8,7 @@ import { palette, type ThemeMode } from "@moneto/theme";
 import { ThemeProvider, useTheme } from "@moneto/ui";
 import { PrivyProvider } from "@privy-io/expo";
 import { PrivyElements } from "@privy-io/expo/ui";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -21,6 +22,7 @@ import { useAutoLogoutOnExpired } from "@/hooks/useAutoLogoutOnExpired";
 import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
 import { useThemePreferenceSync } from "@/hooks/useThemePreferenceSync";
 import { bootObservability } from "@/lib/observability";
+import { queryClient } from "@/lib/query-client";
 import { OfflineBanner } from "@components/OfflineBanner";
 import { useThemeStore } from "@stores/useThemeStore";
 
@@ -62,24 +64,30 @@ export default function RootLayout() {
 
   if (!loaded) return null;
 
-  // PrivyProvider DEBE wrappear ThemeProvider — usePrivy hooks se llaman
-  // desde dentro de Shell, así que necesitan el contexto Privy disponible.
+  // Provider chain (outside-in):
+  // - QueryClientProvider: cache cross-screen para React Query.
+  //   Vive arriba de PrivyProvider para que invalidations sobrevivan
+  //   un Privy state flicker (auth refresh, etc).
+  // - PrivyProvider: usePrivy hooks se llaman desde dentro de Shell.
+  // - ThemeProvider: theme tokens disponibles a todo el subtree.
   return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      {...(PRIVY_CLIENT_ID ? { clientId: PRIVY_CLIENT_ID } : {})}
-      config={{
-        embedded: {
-          solana: {
-            createOnLogin: "users-without-wallets",
+    <QueryClientProvider client={queryClient}>
+      <PrivyProvider
+        appId={PRIVY_APP_ID}
+        {...(PRIVY_CLIENT_ID ? { clientId: PRIVY_CLIENT_ID } : {})}
+        config={{
+          embedded: {
+            solana: {
+              createOnLogin: "users-without-wallets",
+            },
           },
-        },
-      }}
-    >
-      <ThemeProvider mode={mode}>
-        <Shell />
-      </ThemeProvider>
-    </PrivyProvider>
+        }}
+      >
+        <ThemeProvider mode={mode}>
+          <Shell />
+        </ThemeProvider>
+      </PrivyProvider>
+    </QueryClientProvider>
   );
 }
 

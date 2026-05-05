@@ -8,6 +8,7 @@ import { useThemeStore } from "@stores/useThemeStore";
 
 import { resetApiClient } from "./api";
 import { resetUser } from "./observability";
+import { queryClient } from "./query-client";
 import { resetSupabaseClient } from "./supabase";
 
 const log = createLogger("auth");
@@ -323,10 +324,17 @@ export async function performLogoutCleanup(deps: LogoutDeps): Promise<LogoutResu
     failedAt ??= "asyncstorage";
   }
 
-  // ── Stage 4: Singletons (api + supabase clients, token caches) ────────
+  // ── Stage 4: Singletons (api + supabase clients, token caches,
+  //              React Query cache) ────────────────────────────────────
+  // Crítico: invalidar React Query queries cancela in-flight fetches y
+  // borra balance/txs/etc del cache. Si no, el siguiente user
+  // (device sharing) podría ver un flash del balance previo antes del
+  // refetch.
   try {
     resetApiClient();
     resetSupabaseClient();
+    queryClient.cancelQueries();
+    queryClient.clear();
     completed.push("singletons");
   } catch (err) {
     log.error("singleton reset failed", { err: String(err) });

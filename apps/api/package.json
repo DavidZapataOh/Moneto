@@ -22,6 +22,7 @@
     "@moneto/types": "workspace:*",
     "@moneto/utils": "workspace:*",
     "@sentry/cloudflare": "^10.51.0",
+    "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.45.0",
     "hono": "^4.6.13",
     "jose": "^6.2.3",
