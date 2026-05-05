@@ -38,6 +38,10 @@ export const Events = {
 
   // ── Core actions ─────────────────────────────────────────────────────
   balance_viewed: "balance_viewed",
+  /** User tap en una de las 4 quick actions del dashboard de Saldo. */
+  quick_action_tapped: "quick_action_tapped",
+  /** Pull-to-refresh disparado en una pantalla. `screen` discrimina origen. */
+  dashboard_refresh: "dashboard_refresh",
   send_initiated: "send_initiated",
   send_completed: "send_completed",
   send_failed: "send_failed",
@@ -120,6 +124,8 @@ export interface EventProps {
     to: "saldo" | "tarjeta" | "activos" | "yo";
   };
   [Events.balance_viewed]: { tab: "saldo" | "tarjeta" | "activos" | "yo" };
+  [Events.quick_action_tapped]: { action: "receive" | "send" | "cashout" | "swap" };
+  [Events.dashboard_refresh]: { screen: "saldo" | "activos" | "card" };
   [Events.send_initiated]: { type: "p2p" | "cashout" };
   [Events.send_completed]: {
     type: "p2p" | "cashout";

@@ -9,10 +9,14 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { capture, Events, getPostHog } from "@/lib/observability";
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+type QuickActionId = "receive" | "send" | "cashout" | "swap";
+
 interface QuickAction {
-  id: string;
+  id: QuickActionId;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   route: string;
@@ -64,6 +68,8 @@ function ActionButton({ action }: { action: QuickAction }) {
 
   const onPress = () => {
     haptics.tap();
+    const ph = getPostHog();
+    if (ph) capture(ph, Events.quick_action_tapped, { action: action.id });
     router.push(action.route as Href);
   };
 

@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View, Pressable } from "react-native";
 import Animated, {
   useSharedValue,
   withTiming,
   Easing,
   useAnimatedStyle,
+  useAnimatedReaction,
+  runOnJS,
 } from "react-native-reanimated";
 
 interface BalanceHeroProps {
@@ -50,7 +52,34 @@ export function BalanceHero({ balance, yieldApy, hidden, onToggleVisibility }: B
     opacity: balanceOpacity.value,
   }));
 
-  const parts = Math.abs(balance).toFixed(2).split(".");
+  // Counter animation: cuando `balance` cambia (post-refresh, tx settled),
+  // interpolamos el valor mostrado para crear el "reveal moment" — el user
+  // siente el cambio en lugar de que el número salte. 700ms es la sweet
+  // spot: suficientemente lento para registrarse, no tanto como para
+  // sentirse lento. Easing `out(cubic)` para arrival agradable.
+  const animatedBalance = useSharedValue(balance);
+  const [displayBalance, setDisplayBalance] = useState(balance);
+
+  useEffect(() => {
+    animatedBalance.value = withTiming(balance, {
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [balance, animatedBalance]);
+
+  useAnimatedReaction(
+    () => animatedBalance.value,
+    (current, prev) => {
+      // Threshold de 0.005 evita re-render JS innecesario en cada frame
+      // cuando el delta es sub-cent. ~60fps update si el delta es grande.
+      if (prev === null || Math.abs(current - (prev ?? 0)) > 0.005) {
+        runOnJS(setDisplayBalance)(current);
+      }
+    },
+    [],
+  );
+
+  const parts = Math.abs(displayBalance).toFixed(2).split(".");
   const intPart = parts[0] ?? "0";
   const decPart = parts[1] ?? "00";
   const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");

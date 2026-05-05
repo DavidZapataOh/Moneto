@@ -52,6 +52,12 @@ export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 10, paddingRight: 4 }}
+      // Snap suave a cada chip — premium feel típico de Phantom/Robinhood.
+      // 130 = 120pt chip + 10pt gap. `decelerationRate="fast"` hace que el
+      // momentum termine cerca de un snap point en lugar de correr libre.
+      snapToInterval={130}
+      decelerationRate="fast"
+      snapToAlignment="start"
     >
       {visible.map((asset) => (
         <AssetChip key={asset.id} asset={asset} onPress={() => handleAssetPress(asset.id)} />

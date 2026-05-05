@@ -2,16 +2,22 @@ import { Ionicons } from "@expo/vector-icons";
 import { Screen, Text, Card, Avatar, Divider, SectionHeader, useTheme, haptics } from "@moneto/ui";
 import { getGreeting } from "@moneto/utils";
 import { useRouter } from "expo-router";
-import { View, Pressable } from "react-native";
+import { useCallback } from "react";
+import { View, Pressable, RefreshControl } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { capture, Events, getPostHog } from "@/lib/observability";
 import { AssetStrip } from "@components/features/AssetStrip";
 import { BalanceHero } from "@components/features/BalanceHero";
+import { EmptyTransactions } from "@components/features/EmptyTransactions";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { YieldChart } from "@components/features/YieldChart";
-import { mockYieldHistory, mockAssets } from "@data/mock";
+import { Skeleton, BalanceSkeleton, TxRowSkeleton } from "@components/Skeleton";
+import { mockYieldHistory } from "@data/mock";
+import { useDashboardData } from "@hooks/useDashboardData";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
+import { useUnreadNotificationCount } from "@hooks/useUnreadNotificationCount";
 import { useAppStore } from "@stores/useAppStore";
 
 // Spacing system (8-pt grid):
@@ -19,20 +25,49 @@ import { useAppStore } from "@stores/useAppStore";
 // - SECTION_GAP: 32 (entre sección y sección)
 // - CARD_RADIUS: 20 (todas las cards de esta screen)
 // - ROW_HEIGHT: ~68 (avatar 40 + padding 14×2)
-
 const SECTION_GAP = 32;
+
+const TX_PREVIEW_COUNT = 5;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const user = useAppStore((s) => s.user);
-  const balance = useAppStore((s) => s.balance);
-  const transactions = useAppStore((s) => s.transactions).slice(0, 5);
   const balanceHidden = useAppStore((s) => s.balanceHidden);
   const toggleBalanceVisibility = useAppStore((s) => s.toggleBalanceVisibility);
   const bottomSpace = useTabBarSpace();
+  const unreadCount = useUnreadNotificationCount();
+  const dashboard = useDashboardData();
+
+  const isLoading = dashboard.status === "loading";
+  const recentTxs = dashboard.transactions.slice(0, TX_PREVIEW_COUNT);
+
+  const handleRefresh = useCallback(async () => {
+    haptics.tap();
+    const ph = getPostHog();
+    if (ph) capture(ph, Events.dashboard_refresh, { screen: "saldo" });
+    await dashboard.refresh();
+    haptics.success();
+  }, [dashboard]);
 
   return (
-    <Screen padded edges={["top"]} scroll>
+    <Screen
+      padded
+      edges={["top"]}
+      scroll
+      scrollProps={{
+        refreshControl: (
+          <RefreshControl
+            refreshing={dashboard.isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.brand.primary}
+            // Android: el spinner es un círculo, le damos color de marca.
+            colors={[colors.brand.primary]}
+            progressBackgroundColor={colors.bg.elevated}
+          />
+        ),
+      }}
+    >
       {/* Top bar — altura 44 (tap target mínimo iOS) + respiro del safe area */}
       <View
         style={{
@@ -51,6 +86,8 @@ export default function HomeScreen() {
           }}
           style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Abrir perfil de ${user.name}`}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Avatar name={user.name} size="sm" tone="brand" />
@@ -64,19 +101,28 @@ export default function HomeScreen() {
         </Pressable>
 
         <View style={{ flexDirection: "row", gap: 4 }}>
-          <HeaderIconButton icon="scan-outline" onPress={() => haptics.tap()} />
-          <HeaderIconButton icon="notifications-outline" hasBadge onPress={() => haptics.tap()} />
+          <HeaderIconButton icon="scan-outline" label="Escanear QR" onPress={() => haptics.tap()} />
+          <HeaderIconButton
+            icon="notifications-outline"
+            label={unreadCount > 0 ? `Notificaciones, ${unreadCount} sin leer` : "Notificaciones"}
+            unreadCount={unreadCount}
+            onPress={() => haptics.tap()}
+          />
         </View>
       </View>
 
       {/* Balance hero — única emphasis de la pantalla */}
       <Animated.View entering={FadeInDown.duration(400).delay(40)}>
-        <BalanceHero
-          balance={balance.totalUsd}
-          yieldApy={balance.yieldApy}
-          hidden={balanceHidden}
-          onToggleVisibility={toggleBalanceVisibility}
-        />
+        {isLoading ? (
+          <BalanceSkeleton />
+        ) : (
+          <BalanceHero
+            balance={dashboard.balance.totalUsd}
+            yieldApy={dashboard.balance.yieldApy}
+            hidden={balanceHidden}
+            onToggleVisibility={toggleBalanceVisibility}
+          />
+        )}
       </Animated.View>
 
       {/* Quick actions */}
@@ -102,7 +148,15 @@ export default function HomeScreen() {
             },
           }}
         />
-        <AssetStrip assets={mockAssets} />
+        {isLoading ? (
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} width={120} height={88} radius={16} />
+            ))}
+          </View>
+        ) : (
+          <AssetStrip assets={dashboard.assets} />
+        )}
       </Animated.View>
 
       {/* Yield module — card clickable */}
@@ -125,6 +179,8 @@ export default function HomeScreen() {
             haptics.tap();
             router.push("/(tabs)/activos");
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Ver detalle de rendimiento"
         >
           <Card variant="elevated" padded radius="lg">
             <View
@@ -136,10 +192,10 @@ export default function HomeScreen() {
               }}
             >
               <Text variant="amountPrimary" tone="value" style={{ fontSize: 24 }}>
-                +${balance.yieldAccruedMonth.toFixed(2)}
+                +${dashboard.balance.yieldAccruedMonth.toFixed(2)}
               </Text>
               <Text variant="bodySmall" tone="tertiary">
-                este mes · {(balance.yieldApy * 100).toFixed(2)}% APY
+                este mes · {(dashboard.balance.yieldApy * 100).toFixed(2)}% APY
               </Text>
             </View>
             <YieldChart points={mockYieldHistory} height={72} />
@@ -154,22 +210,43 @@ export default function HomeScreen() {
       >
         <SectionHeader
           title="Movimientos"
-          action={{
-            label: "Ver todos",
-            onPress: () => haptics.tap(),
-          }}
+          {...(recentTxs.length > 0
+            ? {
+                action: {
+                  label: "Ver todos",
+                  onPress: () => haptics.tap(),
+                },
+              }
+            : {})}
         />
         <Card variant="elevated" padded={false} radius="lg">
-          {transactions.map((tx, i) => (
-            <View key={tx.id}>
-              <TransactionRow tx={tx} onPress={() => haptics.tap()} />
-              {i < transactions.length - 1 && (
-                <View style={{ paddingHorizontal: 16 }}>
-                  <Divider />
+          {isLoading ? (
+            <>
+              {[0, 1, 2, 3].map((i, _arr, arr = [0, 1, 2, 3]) => (
+                <View key={i}>
+                  <TxRowSkeleton />
+                  {i < arr.length - 1 ? (
+                    <View style={{ paddingHorizontal: 16 }}>
+                      <Divider />
+                    </View>
+                  ) : null}
                 </View>
-              )}
-            </View>
-          ))}
+              ))}
+            </>
+          ) : recentTxs.length === 0 ? (
+            <EmptyTransactions />
+          ) : (
+            recentTxs.map((tx, i) => (
+              <View key={tx.id}>
+                <TransactionRow tx={tx} onPress={() => haptics.tap()} />
+                {i < recentTxs.length - 1 && (
+                  <View style={{ paddingHorizontal: 16 }}>
+                    <Divider />
+                  </View>
+                )}
+              </View>
+            ))
+          )}
         </Card>
       </Animated.View>
 
@@ -178,30 +255,45 @@ export default function HomeScreen() {
   );
 }
 
+/**
+ * Header icon button con press feedback + badge dot opcional.
+ *
+ * Por qué dot (no número): el espacio top-right es premium, cualquier
+ * número compite con el balance hero por la atención visual. Un dot
+ * indica "hay algo nuevo" sin distraer; el count exacto se ve al abrir
+ * la screen de notificaciones.
+ */
 function HeaderIconButton({
   icon,
   onPress,
-  hasBadge = false,
+  unreadCount = 0,
+  label,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
-  hasBadge?: boolean;
+  unreadCount?: number;
+  label: string;
 }) {
   const { colors } = useTheme();
+  const hasBadge = unreadCount > 0;
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
-      style={{
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
         width: 44,
         height: 44,
         alignItems: "center",
         justifyContent: "center",
-      }}
+        opacity: pressed ? 0.65 : 1,
+      })}
     >
       <Ionicons name={icon} size={22} color={colors.text.primary} />
       {hasBadge && (
         <View
+          pointerEvents="none"
           style={{
             position: "absolute",
             top: 10,
@@ -209,7 +301,7 @@ function HeaderIconButton({
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: colors.brand.primary,
+            backgroundColor: colors.danger,
             borderWidth: 2,
             borderColor: colors.bg.primary,
           }}
