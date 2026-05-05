@@ -54,6 +54,9 @@ export type PublicEnv = z.infer<typeof PublicEnvSchema>;
 export const ServerEnvSchema = PublicEnvSchema.extend({
   // Privy server-side
   PRIVY_APP_SECRET: z.string().min(1),
+  // Ed25519 public key (formato PEM) — obtenida del Privy dashboard en
+  // Configuration → App settings → Verification Key. Usada por
+  // `@privy-io/node` para verificar las firmas ES256 de los JWTs.
   PRIVY_VERIFICATION_KEY: z.string().min(1),
 
   // Supabase admin (bypass RLS)

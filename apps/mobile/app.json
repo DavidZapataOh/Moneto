@@ -97,6 +97,13 @@
     "splash": {
       "backgroundColor": "#14100B",
       "resizeMode": "contain"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "041abd0d-04a0-4217-8379-12f668477763"
+      }
+    },
+    "owner": "davidzo"
   }
 }
