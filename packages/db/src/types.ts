@@ -130,6 +130,40 @@ interface ViewingKeyUpdate {
   revoked_at?: Timestamptz | null;
 }
 
+export type KycEventType =
+  | "inquiry.completed"
+  | "inquiry.failed"
+  | "inquiry.expired"
+  | "report.run-completed"
+  | "verification.created";
+
+interface KycAuditLogRow {
+  id: string;
+  user_id: string;
+  inquiry_id: string;
+  persona_event_id: string;
+  event_type: KycEventType;
+  prev_level: KycLevel | null;
+  prev_status: KycStatus | null;
+  new_level: KycLevel;
+  new_status: KycStatus;
+  raw_event: Json;
+  created_at: Timestamptz;
+}
+
+interface KycAuditLogInsert {
+  id?: string;
+  user_id: string;
+  inquiry_id: string;
+  persona_event_id: string;
+  event_type: KycEventType;
+  prev_level?: KycLevel | null;
+  prev_status?: KycStatus | null;
+  new_level: KycLevel;
+  new_status: KycStatus;
+  raw_event: Json;
+}
+
 // ─── Database type (Supabase-compatible) ──────────────────────────────────
 
 export interface Database {
@@ -155,6 +189,11 @@ export interface Database {
         Insert: ViewingKeyInsert;
         Update: ViewingKeyUpdate;
       };
+      kyc_audit_log: {
+        Row: KycAuditLogRow;
+        Insert: KycAuditLogInsert;
+        Update: never; // append-only
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -178,3 +217,4 @@ export type ProfileInsertInput = Database["public"]["Tables"]["profiles"]["Inser
 export type UserPreferences = Database["public"]["Tables"]["user_preferences"]["Row"];
 export type GuardianNotification = Database["public"]["Tables"]["guardian_notifications"]["Row"];
 export type ViewingKey = Database["public"]["Tables"]["viewing_keys"]["Row"];
+export type KycAuditLog = Database["public"]["Tables"]["kyc_audit_log"]["Row"];

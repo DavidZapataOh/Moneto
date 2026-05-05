@@ -76,3 +76,8 @@ verify_jwt = false
 verify_jwt = false
 # Recibe Privy JWT (no Supabase). Validamos manual + minteamos Supabase JWT
 # firmado con SUPABASE_JWT_SECRET para que mobile lo use en queries directas.
+
+[functions.kyc-webhook]
+verify_jwt = false
+# Recibe webhooks de Persona (no Supabase JWT). Validación es HMAC
+# signature contra PERSONA_WEBHOOK_SECRET en el handler.

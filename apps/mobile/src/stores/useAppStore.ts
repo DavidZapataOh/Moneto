@@ -31,6 +31,29 @@ export type AuthState =
   | { status: "expired" }
   | { status: "error"; error: string };
 
+/**
+ * Subset del Profile de Supabase que el mobile usa. Mantenido aparte del
+ * `Database["profiles"]["Row"]` completo para evitar import cross-package
+ * en el store y limitar la superficie a lo que la UI realmente necesita.
+ *
+ * Sprint 1.05+ wirea fetch real desde Supabase via `useProfile()` hook.
+ * Hasta entonces, default es `kyc_level: 0, kyc_status: "none"` — coincide
+ * con el row freshly creado por el edge fn `sync-profile`.
+ */
+export interface ProfileSlice {
+  kycLevel: 0 | 1 | 2 | 3;
+  kycStatus: "none" | "pending" | "approved" | "rejected";
+  countryCode: string | null;
+  handle: string | null;
+}
+
+const DEFAULT_PROFILE: ProfileSlice = {
+  kycLevel: 0,
+  kycStatus: "none",
+  countryCode: null,
+  handle: null,
+};
+
 interface AppState {
   // Auth — discriminated state model
   authState: AuthState;
@@ -41,6 +64,9 @@ interface AppState {
   isAuthenticated: boolean;
   hasCompletedOnboarding: boolean;
   user: User;
+
+  // Profile — slice del Supabase profile (Sprint 1.05 wirea fetch real).
+  profile: ProfileSlice;
 
   // UI state
   balanceHidden: boolean;
@@ -60,6 +86,14 @@ interface AppState {
   logout: () => void;
   completeOnboarding: () => void;
 
+  // Profile actions
+  /**
+   * Update parcial del profile (cualquier subset de fields). Llamar
+   * después de fetch desde Supabase o después de KYC webhook propaga
+   * via realtime (Sprint 5+).
+   */
+  setProfile: (patch: Partial<ProfileSlice>) => void;
+
   // UI actions
   toggleBalanceVisibility: () => void;
 
@@ -73,6 +107,7 @@ export const useAppStore = create<AppState>((set) => ({
   isAuthenticated: false,
   hasCompletedOnboarding: false,
   user: mockUser,
+  profile: DEFAULT_PROFILE,
   balanceHidden: false,
   balance: mockBalance,
   transactions: mockTransactions,
@@ -98,9 +133,12 @@ export const useAppStore = create<AppState>((set) => ({
     set({
       authState: { status: "unauthenticated" },
       isAuthenticated: false,
+      profile: DEFAULT_PROFILE,
     }),
 
   completeOnboarding: () => set({ hasCompletedOnboarding: true }),
+
+  setProfile: (patch) => set((s) => ({ profile: { ...s.profile, ...patch } })),
 
   toggleBalanceVisibility: () => set((s) => ({ balanceHidden: !s.balanceHidden })),
 

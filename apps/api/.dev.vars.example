@@ -43,6 +43,10 @@ HELIUS_WEBHOOK_SECRET=
 CHAINALYSIS_API_KEY=
 # Persona — KYC document + selfie verification.
 PERSONA_API_KEY=
+# Persona webhook signing secret — set en Supabase secrets para el edge fn
+# `kyc-webhook` (NO en este file si solo el API server lo usa, pero docs):
+#   supabase secrets set PERSONA_WEBHOOK_SECRET=<persona dashboard>
+PERSONA_WEBHOOK_SECRET=
 
 # ── Partners (Sprint 6+) ────────────────────────────────────────────────────
 # Bold — off-ramp Colombia (PSE / Bancolombia).
