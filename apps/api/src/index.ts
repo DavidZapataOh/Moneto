@@ -17,6 +17,8 @@ import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
 import earlyAccessRoutes from "./routes/early-access";
 import meRoutes from "./routes/me";
 import pricesRoutes from "./routes/prices";
+import publicPayRoutes from "./routes/public-pay";
+import heliusWebhook from "./routes/webhooks/helius";
 
 interface KVNamespaceBinding {
   get(key: string): Promise<string | null>;
@@ -42,6 +44,8 @@ type Bindings = {
   SOLANA_NETWORK?: string;
   /** Si "false", PriceService usa Stub (devnet/tests). Default Pyth. */
   USE_PYTH?: string;
+  /** Helius webhook shared secret — match al `authHeader` del dashboard. */
+  HELIUS_WEBHOOK_SECRET?: string;
 };
 
 const SERVICE_NAME = "moneto-api";
@@ -172,6 +176,18 @@ app.post("/auth/login", rateLimit(RATE_LIMIT_PRESETS.auth), (c) =>
     501,
   ),
 );
+
+// `/public/pay/*` — endpoint anónimo para resolver handle → walletAddress
+// (Sprint 4.01 payroll links). Read-only, no PII más allá de campos
+// públicos de profile. Rate-limited por IP (preset `read`).
+app.use("/public/*", rateLimit(RATE_LIMIT_PRESETS.read));
+app.route("/public/pay", publicPayRoutes);
+
+// `/webhooks/*` — incoming webhooks de proveedores externos (Helius,
+// Persona, etc.). Cada handler verifica su propio HMAC/auth header
+// antes de tocar la DB. Sin Privy authMiddleware (los provider no
+// emiten Privy JWTs).
+app.route("/webhooks/helius", heliusWebhook);
 
 // ─── Protected routes (`/api/*`) ───────────────────────────────────────────
 // Auth + per-user rate limit. `userId` disponible en `c.get("userId")`.

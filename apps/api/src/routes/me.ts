@@ -352,6 +352,88 @@ me.get("/balance", async (c) => {
   });
 });
 
+// ─── /api/me/push-tokens ────────────────────────────────────────────────────
+//
+// Sprint 4.01 — registro de Expo push tokens. Side effect: bindea el
+// wallet del user en `wallet_index` para que el Helius webhook pueda
+// rutear transferencias entrantes.
+
+const PushPlatformSchema = z.enum(["ios", "android", "web"]);
+
+const PostPushTokenSchema = z
+  .object({
+    /** Expo push token con prefix "ExponentPushToken[...]" o "ExpoPushToken[...]". */
+    token: z.string().min(20).max(160),
+    platform: PushPlatformSchema,
+  })
+  .strict();
+
+me.post("/push-tokens", zValidator("json", PostPushTokenSchema), async (c) => {
+  const userId = requireUserId(c);
+  const { token, platform } = c.req.valid("json");
+  const supabase = createSupabaseAdminClient(c.env);
+
+  // 1. Resolve wallet pubkey via Privy admin. Si el user todavía no tiene
+  // wallet (race con createOnLogin), retornamos 409 — mobile reintenta.
+  let walletAddress: string;
+  try {
+    walletAddress = await getPrivyUserSolanaPubkey(userId, c.env);
+  } catch (err) {
+    log.warn("push-tokens wallet resolution failed", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+    throw new HTTPException(409, { message: "wallet_not_ready" });
+  }
+
+  // 2. Bind wallet → user (idempotent upsert). Si otra row para esta
+  // wallet existe pero con otro user_id, sobreescribimos — Privy puede
+  // re-asignar wallets en escenarios de recovery.
+  const { error: bindErr } = await supabase
+    .from("wallet_index")
+    .upsert({ wallet_address: walletAddress, user_id: userId }, { onConflict: "wallet_address" });
+  if (bindErr) {
+    log.error("wallet_index upsert failed", { code: bindErr.code });
+    throw new HTTPException(500, { message: "wallet_bind_failed" });
+  }
+
+  // 3. Upsert push token — `token` es PK, así que repeats actualizan el
+  // user_id (token se transferred a otro user) y last_used_at.
+  const { error: tokenErr } = await supabase.from("push_tokens").upsert(
+    {
+      token,
+      user_id: userId,
+      platform,
+      last_used_at: new Date().toISOString(),
+      invalidated_at: null,
+    },
+    { onConflict: "token" },
+  );
+  if (tokenErr) {
+    log.error("push_tokens upsert failed", { code: tokenErr.code });
+    throw new HTTPException(500, { message: "push_token_persist_failed" });
+  }
+
+  return c.json({ ok: true });
+});
+
+me.delete("/push-tokens/:token", async (c) => {
+  const userId = requireUserId(c);
+  const token = c.req.param("token");
+  const supabase = createSupabaseAdminClient(c.env);
+
+  // Soft-delete via `invalidated_at` — preserva audit trail.
+  const { error } = await supabase
+    .from("push_tokens")
+    .update({ invalidated_at: new Date().toISOString() })
+    .eq("token", token)
+    .eq("user_id", userId);
+  if (error) {
+    log.warn("push token invalidation failed", { code: error.code });
+    throw new HTTPException(500, { message: "push_token_invalidate_failed" });
+  }
+  return c.json({ ok: true });
+});
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 type PreferencesProjection = Pick<

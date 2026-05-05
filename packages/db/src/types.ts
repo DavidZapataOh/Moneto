@@ -192,6 +192,77 @@ type EarlyAccessRequestUpdate = {
   metadata?: Json;
 };
 
+// ── Sprint 4.01 — payroll infra ─────────────────────────────────────────
+
+export type PushPlatform = "ios" | "android" | "web";
+export type IncomingTransferSourceType = "payroll_link" | "p2p" | "cashout_back" | "unknown";
+
+type WalletIndexRow = {
+  wallet_address: string;
+  user_id: string;
+  bound_at: Timestamptz;
+};
+
+type WalletIndexInsert = {
+  wallet_address: string;
+  user_id: string;
+};
+
+type ProcessedSignatureRow = {
+  signature: string;
+  mint: string;
+  user_id: string | null;
+  processed_at: Timestamptz;
+};
+
+type ProcessedSignatureInsert = {
+  signature: string;
+  mint: string;
+  user_id?: string | null;
+};
+
+type PushTokenRow = {
+  token: string;
+  user_id: string;
+  platform: PushPlatform;
+  last_used_at: Timestamptz;
+  invalidated_at: Timestamptz | null;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+};
+
+type PushTokenInsert = {
+  token: string;
+  user_id: string;
+  platform: PushPlatform;
+  last_used_at?: Timestamptz;
+  invalidated_at?: Timestamptz | null;
+};
+
+type PushTokenUpdate = {
+  last_used_at?: Timestamptz;
+  invalidated_at?: Timestamptz | null;
+};
+
+type IncomingTransferRow = {
+  signature: string;
+  user_id: string;
+  mint: string;
+  from_address: string | null;
+  source_type: IncomingTransferSourceType;
+  block_time: Timestamptz;
+  created_at: Timestamptz;
+};
+
+type IncomingTransferInsert = {
+  signature: string;
+  user_id: string;
+  mint: string;
+  from_address?: string | null;
+  source_type?: IncomingTransferSourceType;
+  block_time: Timestamptz;
+};
+
 // ─── Database type (Supabase-compatible) ──────────────────────────────────
 
 export interface Database {
@@ -268,6 +339,58 @@ export interface Database {
           },
         ];
       };
+      wallet_index: {
+        Row: WalletIndexRow;
+        Insert: WalletIndexInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "wallet_index_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      processed_signatures: {
+        Row: ProcessedSignatureRow;
+        Insert: ProcessedSignatureInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "processed_signatures_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      push_tokens: {
+        Row: PushTokenRow;
+        Insert: PushTokenInsert;
+        Update: PushTokenUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      incoming_transfers: {
+        Row: IncomingTransferRow;
+        Insert: IncomingTransferInsert;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "incoming_transfers_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -293,3 +416,7 @@ export type GuardianNotification = Database["public"]["Tables"]["guardian_notifi
 export type ViewingKey = Database["public"]["Tables"]["viewing_keys"]["Row"];
 export type KycAuditLog = Database["public"]["Tables"]["kyc_audit_log"]["Row"];
 export type EarlyAccessRequest = Database["public"]["Tables"]["early_access_requests"]["Row"];
+export type WalletIndex = Database["public"]["Tables"]["wallet_index"]["Row"];
+export type ProcessedSignature = Database["public"]["Tables"]["processed_signatures"]["Row"];
+export type PushToken = Database["public"]["Tables"]["push_tokens"]["Row"];
+export type IncomingTransfer = Database["public"]["Tables"]["incoming_transfers"]["Row"];

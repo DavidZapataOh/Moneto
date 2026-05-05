@@ -4,7 +4,7 @@ import { Screen, Text, Card, Button, IconButton, Divider, useTheme, haptics } fr
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { View, Pressable, Share } from "react-native";
+import { Linking, View, Pressable, Share } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -14,10 +14,19 @@ export default function ReceiveScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAppStore((s) => s.user);
+  const authState = useAppStore((s) => s.authState);
   const simulate = useAppStore((s) => s.simulateIncomingPayroll);
   const [copied, setCopied] = useState(false);
 
-  const payrollLink = `moneto.xyz/pay/${user.handle.replace("@", "")}`;
+  const handleOnly = user.handle.replace("@", "").toLowerCase();
+  const payrollLink = `moneto.xyz/pay/${handleOnly}`;
+  // Solana Pay deep link como fallback "in-wallet" — abre Phantom/
+  // Backpack desde la app del sender directo. Vacío si no tenemos
+  // wallet ready (auth pending).
+  const walletAddress = authState.status === "authenticated" ? authState.walletAddress : null;
+  const solanaPayUrl = walletAddress
+    ? `solana:${walletAddress}?label=${encodeURIComponent(`Pagar a ${user.handle}`)}&message=${encodeURIComponent("Moneto payroll")}`
+    : null;
 
   const handleCopy = async () => {
     haptics.success();
@@ -31,9 +40,24 @@ export default function ReceiveScreen() {
     try {
       await Share.share({
         message: `Pagáme en Moneto: https://${payrollLink}`,
+        url: `https://${payrollLink}`,
+        title: "Mi link de pago Moneto",
       });
     } catch {
       // Share dialog cancelled — no-op (user dismissed sheet, no error to surface).
+    }
+  };
+
+  const handleOpenInWallet = async () => {
+    if (!solanaPayUrl) return;
+    haptics.tap();
+    try {
+      const supported = await Linking.canOpenURL(solanaPayUrl);
+      if (!supported) return;
+      await Linking.openURL(solanaPayUrl);
+    } catch {
+      // Si el OS rechaza el deep link (no wallet installed), dejamos
+      // al user con el QR + share como alternativa.
     }
   };
 
@@ -156,6 +180,21 @@ export default function ReceiveScreen() {
           />
         </View>
       </Animated.View>
+
+      {/* Open in wallet — Solana Pay deep link, abre Phantom/Backpack
+          desde la misma app del sender. Solo cuando el wallet está
+          ready (post-auth). */}
+      {solanaPayUrl ? (
+        <Animated.View entering={FadeInDown.duration(400).delay(200)} style={{ marginTop: 10 }}>
+          <Button
+            label="Abrir en wallet (Solana Pay)"
+            variant="ghost"
+            fullWidth
+            onPress={handleOpenInWallet}
+            leftIcon={<Ionicons name="wallet-outline" size={16} color={colors.text.primary} />}
+          />
+        </Animated.View>
+      ) : null}
 
       {/* What happens */}
       <Animated.View entering={FadeInDown.duration(400).delay(240)} style={{ marginTop: 28 }}>

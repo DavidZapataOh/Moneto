@@ -20,7 +20,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useAutoLogoutOnExpired } from "@/hooks/useAutoLogoutOnExpired";
 import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
+import { usePushSetup } from "@/hooks/usePushSetup";
 import { useThemePreferenceSync } from "@/hooks/useThemePreferenceSync";
+import { setupNotificationHandler } from "@/lib/notifications";
 import { bootObservability } from "@/lib/observability";
 import { queryClient } from "@/lib/query-client";
 import { OfflineBanner } from "@components/OfflineBanner";
@@ -32,6 +34,10 @@ import "../global.css";
 // arriba para capturar crashes durante mount, PostHog para events de
 // app_opened. No-op si los tokens públicos no están set.
 bootObservability();
+
+// Notification handler — debe estar arriba para que las notifs en
+// foreground muestren banner. No-op safe en cada cold start.
+setupNotificationHandler();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -104,6 +110,10 @@ function Shell() {
   // Sync theme preference local ⇄ remote (Supabase user_preferences).
   // Pull on login (last-write-wins), push debounced en cambios locales.
   useThemePreferenceSync();
+
+  // Push notifications — registra Expo token en backend on auth +
+  // handles tap deep-links. No-op silent en simulator / permission deny.
+  usePushSetup();
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(isDark ? palette.ink[900] : palette.cream[50]);
