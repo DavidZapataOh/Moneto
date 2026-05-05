@@ -2,7 +2,6 @@ import { EnvironmentSchema, type Environment } from "@moneto/config";
 import {
   axiomSink,
   flushAxiom,
-  scrubObject,
   sentryWorkersConfig,
   type AxiomLikeClient,
 } from "@moneto/observability";
@@ -11,7 +10,9 @@ import { Hono } from "hono";
 import { logger as honoLogger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 
+import { authMiddleware } from "./middleware/auth";
 import { corsMiddleware } from "./middleware/cors";
+import { formatError, requestIdMiddleware } from "./middleware/error-handler";
 import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
 
 interface KVNamespaceBinding {
@@ -25,11 +26,15 @@ type Bindings = {
   SENTRY_DSN?: string;
   AXIOM_TOKEN?: string;
   AXIOM_DATASET?: string;
+  /** Privy app ID (público — usado para validar `aud` claim de los JWTs). */
+  PRIVY_APP_ID?: string;
   /** KV namespace para rate limit counters — opcional, fallback in-memory. */
   RATE_LIMITS?: KVNamespaceBinding;
 };
 
 const SERVICE_NAME = "moneto-api";
+// Versión actual del API — surface-able vía /version. Bump en cada release.
+const API_VERSION = "0.1.0";
 
 const log = createLogger("api");
 
@@ -98,22 +103,33 @@ async function bootObservability(env: Bindings): Promise<void> {
 
 const app = new Hono<{ Bindings: Bindings; Variables: { env: Environment } }>();
 
+// 1. Boot observability + resolver env (corre primero, antes de error
+//    handler, así los logs/tracing están listos al primer error).
 app.use("*", async (c, next) => {
   await bootObservability(c.env);
   c.set("env", resolveEnv(c.env.ENVIRONMENT));
   await next();
 });
 
+// 2. Request ID — early, para que todos los logs/responses lo lleven.
+//    El error formatting (incluso de HTTPException) se hace en `app.onError`
+//    abajo — Hono v4 short-circuita HTTPException directo a onError, así
+//    que no podemos atraparlas con un try/catch en middleware.
+app.use("*", requestIdMiddleware());
+
+// 3. Logging + security headers.
 app.use("*", honoLogger());
 app.use("*", secureHeaders());
 
-// CORS — allowlist por environment, resuelto dinámicamente al request.
+// 4. CORS — allowlist por environment, resuelto dinámicamente al request.
 app.use("*", async (c, next) => {
   const middleware = corsMiddleware(c.get("env"));
   return middleware(c, next);
 });
 
-// `/health` con rate limit ultra-tolerante (uptime monitors pegan cada 30s).
+// ─── Public routes ─────────────────────────────────────────────────────────
+// Sin auth required. Rate limit tolerante para uptime monitors / clients.
+
 app.get("/health", rateLimit(RATE_LIMIT_PRESETS.health), (c) =>
   c.json({
     status: "ok",
@@ -123,27 +139,84 @@ app.get("/health", rateLimit(RATE_LIMIT_PRESETS.health), (c) =>
   }),
 );
 
-// Stub de auth — ejemplo de cómo aplicar rate limit agresivo a endpoints
-// sensibles. Los handlers reales llegan en Sprint 1.
-app.post("/auth/login", rateLimit(RATE_LIMIT_PRESETS.auth), (c) =>
-  c.json({ error: "not_implemented", sprint: "1.04" }, 501),
+app.get("/version", rateLimit(RATE_LIMIT_PRESETS.read), (c) =>
+  c.json({
+    service: SERVICE_NAME,
+    version: API_VERSION,
+    env: c.get("env"),
+  }),
 );
 
-app.notFound((c) => c.json({ error: "not_found", path: c.req.path }, 404));
+// Stub de login — Sprint 1 ya delega a Privy, este endpoint queda como
+// 501 hasta que tengamos un caso server-side de auth (e.g., webhook).
+app.post("/auth/login", rateLimit(RATE_LIMIT_PRESETS.auth), (c) =>
+  c.json(
+    {
+      error: {
+        code: "not_implemented",
+        message: "Auth via Privy embedded wallets — no server endpoint.",
+      },
+    },
+    501,
+  ),
+);
 
-app.onError((err, c) => {
-  // Scrub error message + stack antes de loggear (defensa en profundidad —
-  // el sink de Axiom ya scrubs, pero el console.error de fallback no).
-  const scrubbed = scrubObject({
-    name: err.name,
-    message: err.message,
-    stack: err.stack,
-    route: c.req.path,
-    method: c.req.method,
+// ─── Protected routes (`/api/*`) ───────────────────────────────────────────
+// Auth + per-user rate limit. `userId` disponible en `c.get("userId")`.
+
+// Auth middleware primero — si falla, el rate limit no corre (un atacker
+// sin token no consume tu KV quota).
+app.use("/api/*", authMiddleware());
+
+// Per-user rate limit. `keyFn` extrae userId del context (ya seteado por
+// authMiddleware). Preset `read` (60/min) — apropriado default; routes
+// money-moving usarán presets más estrictos.
+app.use(
+  "/api/*",
+  rateLimit({
+    ...RATE_LIMIT_PRESETS.read,
+    keyFn: (c) => {
+      const userId = (c.var as { userId?: string }).userId;
+      // Fallback a IP si por alguna razón no hay userId (no debería pasar
+      // post-authMiddleware, pero defensa en profundidad).
+      return userId ? `user:${userId}` : `ip:${c.req.header("CF-Connecting-IP") ?? "unknown"}`;
+    },
+    prefix: "rl:api:",
+  }),
+);
+
+// Smoke endpoint — devuelve el userId + claims del JWT verificado. Útil
+// para test E2E del flow auth completo.
+app.get("/api/me", (c) => {
+  const userId = c.get("userId");
+  const claims = c.get("claims");
+  return c.json({
+    userId,
+    issuer: claims.iss,
+    audience: claims.aud,
+    expiresAt: new Date(claims.exp * 1000).toISOString(),
   });
-  log.error("unhandled error", scrubbed);
-  return c.json({ error: "internal_error" }, 500);
 });
+
+// ─── Fallback handlers ─────────────────────────────────────────────────────
+
+app.notFound((c) =>
+  c.json(
+    {
+      error: {
+        code: "not_found",
+        message: "Endpoint no encontrado.",
+        path: c.req.path,
+      },
+    },
+    404,
+  ),
+);
+
+// Global error handler — formatea TODO (HTTPException + unexpected) a JSON
+// estructurado con `requestId`. HTTPException es flujo conocido (no log);
+// unexpected dispara log.error + (futuro) Sentry capture.
+app.onError(formatError);
 
 /**
  * Worker entrypoint. Wrappea el app de Hono con `Sentry.withSentry()`

@@ -19,6 +19,9 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Privy (server-side JWT validation + admin) ──────────────────────────────
+# App ID es público (mismo valor que EXPO_PUBLIC_PRIVY_APP_ID en mobile),
+# pero el server lo necesita para validar `aud` claim de los JWTs.
+PRIVY_APP_ID=clxxxxxxxxxxxxxxxx
 PRIVY_APP_SECRET=privy_app_secret_FROM_VAULT
 # Ed25519 public key — Privy dashboard → Configuration → App settings →
 # Verification Key. Multiline OK en .dev.vars (Wrangler lo soporta).
