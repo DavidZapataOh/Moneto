@@ -51,6 +51,14 @@ export const Events = {
   swap_completed: "swap_completed",
   swap_high_slippage_warning_shown: "swap_high_slippage_warning_shown",
   card_spend: "card_spend",
+  /** User toggled la card freeze (UI optimistic; Sprint 6 server-side propaga). */
+  card_frozen: "card_frozen",
+  /** User reveló el PAN completo (post-biometric). NUNCA logueamos el PAN. */
+  card_pan_revealed: "card_pan_revealed",
+  /** User toggled un setting de la card (online/physical/international). */
+  card_setting_toggled: "card_setting_toggled",
+  /** Screenshot detectado mientras PAN visible — auto-hide + alert. Privacy. */
+  card_pan_screenshot_detected: "card_pan_screenshot_detected",
 
   // ── KYC + compliance ─────────────────────────────────────────────────
   kyc_started: "kyc_started",
@@ -142,6 +150,13 @@ export interface EventProps {
     amount_bucket: AmountBucket;
   };
   [Events.card_spend]: { merchant_category: string; amount_bucket: AmountBucket };
+  [Events.card_frozen]: { frozen: boolean };
+  [Events.card_pan_revealed]: { method: "biometric" | "fallback" };
+  [Events.card_setting_toggled]: {
+    key: "allowOnline" | "allowPhysical" | "allowInternational";
+    value: boolean;
+  };
+  [Events.card_pan_screenshot_detected]: Record<string, never>;
   [Events.kyc_started]: { level: 1 | 2 | 3 };
   [Events.kyc_completed]: { level: 1 | 2 | 3; duration_minutes: number };
   [Events.kyc_rejected]: { level: 1 | 2 | 3; reason: string };

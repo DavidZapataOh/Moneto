@@ -285,16 +285,54 @@ export const mockYieldHistory = Array.from({ length: 30 }, (_, i) => {
 });
 
 // ─── Card ──────────────────────────────────────────────────────
+//
+// `status: 'not_provisioned'` corresponde al user pre-Sprint-6 que aún no
+// tiene tarjeta Rain provisionada — mostramos empty state con CTA solicitar.
+// `'frozen'` desactiva pagos client-side (server-side enforcement Sprint 6).
 
-export const mockCard = {
+export type CardStatus = "active" | "frozen" | "not_provisioned";
+
+export interface MockCard {
+  id: string;
+  last4: string;
+  type: "virtual" | "physical";
+  cardholderName: string;
+  network: "Visa" | "Mastercard";
+  status: CardStatus;
+  /**
+   * 16 dígitos sin separadores. Sólo presente cuando el user pasa biometric
+   * verification (mock: siempre presente para que el reveal funcione en demo).
+   * En production viene del API call `getCardDetails()` y nunca se persiste
+   * en AsyncStorage / Sentry.
+   */
+  fullPan: string;
+  /** Mes 1-12. */
+  expiryMonth: number;
+  /** Año 4 dígitos. */
+  expiryYear: number;
+  limitDailyUsd: number;
+  spentTodayUsd: number;
+  /** Toggles cliente — server-side reaplica via Rain webhook (Sprint 6). */
+  allowOnline: boolean;
+  allowPhysical: boolean;
+  allowInternational: boolean;
+}
+
+export const mockCard: MockCard = {
   id: "card_01",
   last4: "4829",
-  type: "virtual" as const,
+  type: "virtual",
   cardholderName: "MARIA JIMENEZ",
   network: "Visa",
-  status: "active" as const,
+  status: "active",
+  fullPan: "4929501234564829",
+  expiryMonth: 8,
+  expiryYear: 2030,
   limitDailyUsd: 1000,
   spentTodayUsd: 36.5,
+  allowOnline: true,
+  allowPhysical: true,
+  allowInternational: false,
 };
 
 export const mockViewingKeys = [

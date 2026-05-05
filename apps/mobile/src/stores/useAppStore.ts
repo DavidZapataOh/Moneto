@@ -7,6 +7,7 @@ import {
   mockCard,
   mockViewingKeys,
   mockContacts,
+  type MockCard,
   type Transaction,
   type User,
 } from "@data/mock";
@@ -75,7 +76,7 @@ interface AppState {
   balance: typeof mockBalance;
   transactions: Transaction[];
   contacts: User[];
-  card: typeof mockCard;
+  card: MockCard;
   viewingKeys: typeof mockViewingKeys;
 
   // Auth actions
@@ -113,6 +114,15 @@ interface AppState {
   // Mock data actions (Sprint 2+ los reemplaza con calls reales)
   sendP2P: (to: User, amount: number, note?: string) => void;
   simulateIncomingPayroll: (amount: number) => void;
+
+  // Card actions — mocks que mutan `card` slice. Sprint 6 los reemplaza
+  // con mutations reales contra Rain (`updateCardSettings`, `freezeCard`).
+  setCardFrozen: (frozen: boolean) => void;
+  setCardSetting: (
+    key: "allowOnline" | "allowPhysical" | "allowInternational",
+    value: boolean,
+  ) => void;
+  setCardLimit: (limitDailyUsd: number) => void;
 }
 
 /**
@@ -211,6 +221,21 @@ export const useAppStore = create<AppState>((set, get) => ({
       },
     }));
   },
+
+  setCardFrozen: (frozen) =>
+    set((s) => ({
+      card: { ...s.card, status: frozen ? "frozen" : "active" } satisfies MockCard,
+    })),
+
+  setCardSetting: (key, value) =>
+    set((s) => ({
+      card: { ...s.card, [key]: value } satisfies MockCard,
+    })),
+
+  setCardLimit: (limitDailyUsd) =>
+    set((s) => ({
+      card: { ...s.card, limitDailyUsd } satisfies MockCard,
+    })),
 
   simulateIncomingPayroll: (amount) => {
     const newTx: Transaction = {

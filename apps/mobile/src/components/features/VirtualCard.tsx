@@ -20,8 +20,41 @@ const CARD_HEIGHT = CARD_WIDTH * 0.63; // ratio Visa standard
 interface VirtualCardProps {
   last4: string;
   cardholderName: string;
+  /** Mes 1-12 + año 4 dígitos. Se renderea como `MM/YY` en la cara back. */
+  expiryMonth: number;
+  expiryYear: number;
+  /**
+   * Si true, gira la card a back-face (CVV + exp visible). Animado con
+   * flip 3D suave (~500ms). El back-face ya NO muestra "•••" sino los
+   * datos reales cuando `showFullPan` también está true.
+   */
   showDetails?: boolean;
+  /**
+   * Si true, renderea el PAN completo en la front-face (en lugar del
+   * mask `•••• •••• •••• 0142`). Caller debe garantizar que el reveal
+   * pasó por biometric antes de setear esto.
+   */
+  showFullPan?: boolean;
+  /** PAN sin separadores. Sólo se usa si `showFullPan === true`. */
+  fullPan?: string;
+  /** CVV de 3 dígitos para mostrar en la back-face cuando se reveló PAN. */
+  cvv?: string;
+  /**
+   * Si true, dim la card a opacity 0.55 + pause de la idle breathe
+   * animation. Indica que la card está congelada y no permite pagos.
+   */
+  frozen?: boolean;
   onTap?: () => void;
+}
+
+/**
+ * Formatea un PAN sin separadores (16 dígitos) en grupos de 4. Ejemplo:
+ * `4929501234564829` → `4929 5012 3456 4829`. No-op si el PAN no tiene
+ * exactamente 16 dígitos (defensivo).
+ */
+function formatPanSpaced(pan: string): string {
+  if (pan.length !== 16) return pan;
+  return pan.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
 /**
@@ -31,12 +64,19 @@ interface VirtualCardProps {
 export function VirtualCard({
   last4,
   cardholderName,
+  expiryMonth,
+  expiryYear,
   showDetails = false,
+  showFullPan = false,
+  fullPan,
+  cvv,
+  frozen = false,
   onTap,
 }: VirtualCardProps) {
   const rotateY = useSharedValue(0);
   const rotateX = useSharedValue(0);
   const pressScale = useSharedValue(1);
+  const dimOpacity = useSharedValue(frozen ? 0.55 : 1);
 
   const flip = useSharedValue(0);
 
@@ -47,8 +87,16 @@ export function VirtualCard({
     });
   }, [showDetails, flip]);
 
-  // Subtle idle breathe — Revolut-esque
+  // Frozen → dim card a 0.55 (visual signal de "no funcional"). Cuando
+  // descongela, vuelve a 1.0 con timing suave.
   useEffect(() => {
+    dimOpacity.value = withTiming(frozen ? 0.55 : 1, { duration: 220 });
+  }, [frozen, dimOpacity]);
+
+  // Subtle idle breathe — Revolut-esque. Pausada cuando frozen para que el
+  // user perciba el "estado quieto" de una card desactivada.
+  useEffect(() => {
+    if (frozen) return;
     const loop = () => {
       rotateY.value = withTiming(4, { duration: 3200, easing: Easing.inOut(Easing.quad) });
       rotateX.value = withTiming(-2, { duration: 3200, easing: Easing.inOut(Easing.quad) });
@@ -60,7 +108,7 @@ export function VirtualCard({
     loop();
     const interval = setInterval(loop, 6400);
     return () => clearInterval(interval);
-  }, [rotateY, rotateX]);
+  }, [rotateY, rotateX, frozen]);
 
   const frontStyle = useAnimatedStyle(() => ({
     transform: [
@@ -69,7 +117,7 @@ export function VirtualCard({
       { rotateX: `${rotateX.value}deg` },
       { scale: pressScale.value },
     ],
-    opacity: interpolate(flip.value, [0, 0.5, 1], [1, 0, 0]),
+    opacity: interpolate(flip.value, [0, 0.5, 1], [1, 0, 0]) * dimOpacity.value,
     backfaceVisibility: "hidden",
   }));
 
@@ -80,7 +128,7 @@ export function VirtualCard({
       { rotateX: `${rotateX.value}deg` },
       { scale: pressScale.value },
     ],
-    opacity: interpolate(flip.value, [0, 0.5, 1], [0, 0, 1]),
+    opacity: interpolate(flip.value, [0, 0.5, 1], [0, 0, 1]) * dimOpacity.value,
     backfaceVisibility: "hidden",
   }));
 
@@ -145,12 +193,21 @@ export function VirtualCard({
               <Text
                 style={{
                   fontFamily: fonts.monoMedium,
-                  fontSize: 22,
-                  letterSpacing: 4,
+                  // Reducimos el size cuando se renderea PAN completo
+                  // (más texto, mantener el ancho contained).
+                  fontSize: showFullPan && fullPan ? 18 : 22,
+                  letterSpacing: showFullPan && fullPan ? 2 : 4,
                   color: palette.cream[50],
                 }}
+                allowFontScaling={false}
+                numberOfLines={1}
+                accessibilityLabel={
+                  showFullPan && fullPan
+                    ? "Número de tarjeta visible"
+                    : `Tarjeta terminada en ${last4.split("").join(" ")}`
+                }
               >
-                •••• •••• •••• {last4}
+                {showFullPan && fullPan ? formatPanSpaced(fullPan) : `•••• •••• •••• ${last4}`}
               </Text>
 
               <View
@@ -242,8 +299,16 @@ export function VirtualCard({
               </Text>
               <Text
                 style={{ fontFamily: fonts.monoMedium, fontSize: 16, color: palette.cream[50] }}
+                allowFontScaling={false}
+                accessibilityLabel={
+                  showFullPan && cvv ? "Datos de seguridad visibles" : "Datos ocultos"
+                }
               >
-                ••• · ••/••
+                {showFullPan && cvv ? cvv : "•••"}
+                {" · "}
+                {showFullPan
+                  ? `${expiryMonth.toString().padStart(2, "0")}/${(expiryYear % 100).toString().padStart(2, "0")}`
+                  : "••/••"}
               </Text>
             </View>
           </LinearGradient>
