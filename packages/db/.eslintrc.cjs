@@ -5,5 +5,7 @@ module.exports = {
     project: "./tsconfig.json",
     tsconfigRootDir: __dirname,
   },
-  ignorePatterns: ["supabase/functions/**", "supabase/.temp/**"],
+  // Edge functions = Deno runtime, no node_modules → eslint Node parser falla.
+  // Tests = spec viva sin vitest aún (Sprint 8 ramp), fuera de tsconfig include.
+  ignorePatterns: ["supabase/functions/**", "supabase/.temp/**", "tests/**"],
 };

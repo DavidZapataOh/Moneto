@@ -1,7 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Text, Button, Logo, Divider, useTheme, haptics } from "@moneto/ui";
 import { createLogger } from "@moneto/utils";
-import { useEmbeddedSolanaWallet, useLoginWithOAuth, usePrivy } from "@privy-io/expo";
+import {
+  getAccessToken,
+  useEmbeddedSolanaWallet,
+  useLoginWithOAuth,
+  usePrivy,
+} from "@privy-io/expo";
 import { useLoginWithPasskey } from "@privy-io/expo/passkey";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -9,7 +14,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, View, Pressable, StyleSheet, Dimensions } from "react-native";
 
 import { isBiometryAvailable, reportAuthError, waitForSolanaWallet } from "@/lib/auth";
+import { syncProfileToSupabase } from "@/lib/profile";
 import { useAppStore } from "@stores/useAppStore";
+
+// Default country code para signup. Sprint 1.04 (KYC) introduce detection
+// real (geolocation o user input) — por ahora hardcoded a CO porque ese es
+// nuestro mercado primario MVP.
+// TODO(sprint-1.04): replace with detected country.
+const DEFAULT_COUNTRY_CODE = "CO";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -84,24 +96,53 @@ export default function AuthScreen() {
   const wallets = useEmbeddedSolanaWallet();
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
 
-  const handleSuccess = useCallback(async () => {
-    haptics.success();
+  const handleSuccess = useCallback(
+    async (privyUser: { id: string }) => {
+      haptics.success();
 
-    // UI optimista: navegamos inmediato. El polling del wallet corre en
-    // background — si falla, mostramos alert pero el user ya ve la
-    // pantalla nueva (Privy reintenta wallet creation automáticamente).
-    completeOnboarding();
-    router.replace("/(tabs)");
+      // UI optimista: navegamos inmediato. El polling del wallet + sync de
+      // profile corren en background — si fallan, el user ya ve la pantalla
+      // nueva. usePrivyAuthSync sigue poll-eando hasta que wallet esté ready.
+      completeOnboarding();
+      router.replace("/(tabs)");
 
-    const address = await waitForSolanaWallet(() => extractFirstSolanaAddress(wallets), {
-      timeoutMs: 10_000,
-    });
-    if (!address) {
-      log.warn("solana wallet not ready after timeout — user can retry from /(tabs)");
-      // No bloqueamos UI — el `usePrivyAuthSync` seguirá poll-eando y
-      // cuando el wallet esté ready, el authState pasa a `authenticated`.
-    }
-  }, [completeOnboarding, router, wallets]);
+      const address = await waitForSolanaWallet(() => extractFirstSolanaAddress(wallets), {
+        timeoutMs: 10_000,
+      });
+      if (!address) {
+        log.warn("solana wallet not ready after timeout — user can retry from /(tabs)");
+        return;
+      }
+
+      // Sync profile a Supabase (compartmentalized — wallet address NUNCA
+      // se manda). Si falla, no bloqueamos — el user igual puede usar la
+      // app y reintentamos en background o desde settings.
+      if (!privyUser) {
+        log.warn("no privy user at sync time — skipping profile sync");
+        return;
+      }
+
+      const token = await getAccessToken().catch(() => null);
+      if (!token) {
+        log.warn("no privy access token — skipping profile sync");
+        return;
+      }
+
+      // PrivyUser shape varía por SDK version — casteamos a `any` solo aquí.
+      // syncProfileToSupabase usa duck typing internamente.
+      const result = await syncProfileToSupabase({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        user: privyUser as any,
+        token,
+        countryCode: DEFAULT_COUNTRY_CODE,
+      });
+
+      if (!result.ok) {
+        log.warn("profile sync failed (non-fatal)", { error: result.error });
+      }
+    },
+    [completeOnboarding, router, wallets],
+  );
 
   const handleError = useCallback(
     (error: unknown, method: AuthMethod) => {
