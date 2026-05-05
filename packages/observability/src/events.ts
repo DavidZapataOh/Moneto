@@ -46,6 +46,8 @@ export const Events = {
   assets_priorities_opened: "assets_priorities_opened",
   /** User reordenó la prioridad de un asset (move up/down). */
   assets_priorities_changed: "assets_priorities_changed",
+  /** User tap en un row del screen "Yo" (settings). Funnel diagnóstico. */
+  profile_setting_tapped: "profile_setting_tapped",
   send_initiated: "send_initiated",
   send_completed: "send_completed",
   send_failed: "send_failed",
@@ -137,11 +139,17 @@ export interface EventProps {
   };
   [Events.balance_viewed]: { tab: "saldo" | "tarjeta" | "activos" | "yo" };
   [Events.quick_action_tapped]: { action: "receive" | "send" | "cashout" | "swap" };
-  [Events.dashboard_refresh]: { screen: "saldo" | "activos" | "card" };
+  [Events.dashboard_refresh]: { screen: "saldo" | "activos" | "card" | "profile" };
   [Events.assets_priorities_opened]: Record<string, never>;
   [Events.assets_priorities_changed]: {
     asset: "usd" | "cop" | "sol" | "btc";
     direction: -1 | 1;
+  };
+  [Events.profile_setting_tapped]: {
+    section: "privacidad" | "cuenta" | "app" | "legal";
+    item: string;
+    /** True si el row navega a una route real, false si es Alert "próximamente". */
+    has_target: boolean;
   };
   [Events.send_initiated]: { type: "p2p" | "cashout" };
   [Events.send_completed]: {

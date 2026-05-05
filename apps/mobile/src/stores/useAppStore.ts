@@ -48,11 +48,22 @@ export interface ProfileSlice {
   handle: string | null;
 }
 
+/**
+ * Defaults del profile slice. Hoy son **mocks demo-friendly** (KYC nivel 2,
+ * Colombia, handle de la persona ficticia) para que las pantallas se vean
+ * pobladas durante demos del hackathon. Sprint 5 los reemplaza con fetch
+ * real desde Supabase via `useProfile()` que sobreescribe estos valores
+ * en cuanto el JWT está listo.
+ *
+ * Cuando swap-eemos a fetch real, los defaults se vuelven `kycLevel: 0,
+ * countryCode: null, handle: null` (correctos para un user post-signup
+ * que aún no completó KYC).
+ */
 const DEFAULT_PROFILE: ProfileSlice = {
-  kycLevel: 0,
-  kycStatus: "none",
-  countryCode: null,
-  handle: null,
+  kycLevel: 2,
+  kycStatus: "approved",
+  countryCode: "CO",
+  handle: "@maria_jr",
 };
 
 interface AppState {

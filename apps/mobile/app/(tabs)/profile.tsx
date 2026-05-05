@@ -1,27 +1,43 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, SectionHeader, Text, Card, Avatar, Divider, useTheme, haptics } from "@moneto/ui";
+import { Avatar, Card, Divider, Screen, SectionHeader, Text, haptics, useTheme } from "@moneto/ui";
 import { useRouter, type Href } from "expo-router";
-import { Alert, View, Pressable } from "react-native";
+import { useCallback } from "react";
+import { Alert, Pressable, RefreshControl, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { getCountryInfo } from "@/lib/countries";
+import { capture, Events, getPostHog } from "@/lib/observability";
+import { useDashboardData } from "@hooks/useDashboardData";
 import { useLogout } from "@hooks/useLogout";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
+import { useUnreadNotificationCount } from "@hooks/useUnreadNotificationCount";
 import { useAppStore } from "@stores/useAppStore";
 import { useThemeStore } from "@stores/useThemeStore";
 
 const SECTION_GAP = 32;
 
-type RowItem = {
+type SectionKey = "privacidad" | "cuenta" | "app" | "legal";
+type BadgeTone = "brand" | "success" | "warning";
+
+interface RowItem {
+  id: string;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  // Top-right slot: value destacado (Verificado, Gestionar, "Activo")
-  // Bottom line tiene sub a izq y meta a der SIEMPRE — así queda estructura 2-col
-  sub: string; // izquierda línea inferior
-  meta?: string; // derecha línea inferior
+  sub: string;
+  meta?: string;
+  /** Si está set, el row navega. Si null, dispara `unavailableMessage`. */
   route: string | null;
   badge?: string;
-  badgeTone?: "brand" | "success";
-};
+  badgeTone?: BadgeTone;
+  /** Mensaje "próximamente" custom para rows sin route. Si vacío, Alert default. */
+  unavailableMessage?: string;
+}
+
+interface SectionDef {
+  key: SectionKey;
+  header: string;
+  items: RowItem[];
+}
 
 const THEME_LABEL: Record<"system" | "light" | "dark", string> = {
   system: "Automático",
@@ -29,15 +45,45 @@ const THEME_LABEL: Record<"system" | "light" | "dark", string> = {
   dark: "Oscuro",
 };
 
+/**
+ * Yo screen — settings hub. Estructura iOS Settings-grade con sections
+ * agrupadas por dominio (Privacidad / Cuenta / App / Legal).
+ *
+ * Filosofía visual aplicada (design.txt + colors.txt):
+ * - **Hero como statement de identidad**: avatar XL + name + handle +
+ *   country flag. KYC badge condicional comunica state.
+ * - **Settings rows neutros**: el único color es el badge cuando aplica
+ *   (Gestionar = brand, Verificado = success, Completá tu KYC = warning,
+ *   Cerrar sesión = danger). Esto sigue colors.txt: *"Color should be
+ *   reserved for communicating status."*
+ * - **Logout destructive separado**: no es un row, es un Pressable text
+ *   destructive con confirmation Alert. Fricción intencional.
+ */
 export default function ProfileScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const user = useAppStore((s) => s.user);
+  const profile = useAppStore((s) => s.profile);
   const themePreference = useThemeStore((s) => s.preference);
   const bottomSpace = useTabBarSpace();
+  const dashboard = useDashboardData();
+  const unreadCount = useUnreadNotificationCount();
   const { logout, isLoggingOut } = useLogout();
 
-  const handleLogout = () => {
+  const country = getCountryInfo(profile.countryCode);
+  const handle = profile.handle ?? user.handle;
+
+  const handleRefresh = useCallback(async () => {
+    haptics.tap();
+    const ph = getPostHog();
+    if (ph) capture(ph, Events.dashboard_refresh, { screen: "profile" });
+    // Profile refresh = re-fetch del profile/KYC slice. Hoy mockeamos via
+    // dashboard.refresh; Sprint 5 wirea invalidate de queries reales.
+    await dashboard.refresh();
+    haptics.success();
+  }, [dashboard]);
+
+  const handleLogout = useCallback(() => {
     if (isLoggingOut) return;
     haptics.tap();
     Alert.alert(
@@ -52,9 +98,6 @@ export default function ProfileScreen() {
             haptics.medium();
             const result = await logout();
             if (!result.ok && result.failedAt !== "privy") {
-              // El navigation a /(onboarding) ya pasó (siempre escapamos),
-              // pero avisamos que algo quedó a medio limpiar para que el
-              // user sepa que un kill manual de la app no está de más.
               Alert.alert(
                 "Sesión cerrada parcialmente",
                 "Cerramos tu sesión pero algo falló al limpiar el cache. Para mayor seguridad cerrá la app y volvé a abrirla.",
@@ -64,13 +107,47 @@ export default function ProfileScreen() {
         },
       ],
     );
-  };
+  }, [isLoggingOut, logout]);
 
-  const sections: Array<{ header: string; items: RowItem[] }> = [
+  const handleRowPress = useCallback(
+    (section: SectionKey, item: RowItem) => {
+      haptics.tap();
+      const ph = getPostHog();
+      if (ph) {
+        capture(ph, Events.profile_setting_tapped, {
+          section,
+          item: item.id,
+          has_target: item.route !== null,
+        });
+      }
+      if (item.route) {
+        router.push(item.route as Href);
+      } else {
+        Alert.alert(
+          item.label,
+          item.unavailableMessage ??
+            "Esta sección llega en un próximo sprint. Estamos priorizando los flujos core.",
+          [{ text: "Entendido" }],
+        );
+      }
+    },
+    [router],
+  );
+
+  const handleKycBadgePress = useCallback(() => {
+    if (profile.kycLevel >= 1) return;
+    haptics.tap();
+    router.push(`/kyc?target_level=1` as Href);
+  }, [profile.kycLevel, router]);
+
+  // ── Sections — derivadas del profile real ────────────────────────────────
+  const sections: SectionDef[] = [
     {
+      key: "privacidad",
       header: "Privacidad",
       items: [
         {
+          id: "viewing-keys",
           icon: "shield-checkmark",
           label: "Viewing keys",
           sub: "Selective disclosure",
@@ -80,6 +157,7 @@ export default function ProfileScreen() {
           badgeTone: "brand",
         },
         {
+          id: "tax-report",
           icon: "document-text",
           label: "Reporte fiscal",
           sub: "PDF para contador",
@@ -87,46 +165,60 @@ export default function ProfileScreen() {
           route: "/privacy",
         },
         {
+          id: "security",
           icon: "lock-closed",
           label: "Seguridad",
           sub: "Face ID · 3 guardianes",
           meta: "Activo",
           route: null,
+          unavailableMessage:
+            "Configuración de Face ID + guardian recovery se conecta en Sprint 7 con el sistema Squads.",
         },
       ],
     },
     {
+      key: "cuenta",
       header: "Cuenta",
       items: [
         {
+          id: "kyc",
           icon: "ribbon",
           label: "Verificación KYC",
-          sub: "Nivel 2",
-          meta: "Completo",
-          route: null,
-          badge: "Verificado",
-          badgeTone: "success",
+          sub: kycSubLabel(profile.kycLevel),
+          meta: kycMetaLabel(profile.kycLevel),
+          route: profile.kycLevel >= 3 ? null : "/kyc",
+          ...(profile.kycLevel >= 1
+            ? { badge: "Verificado" as const, badgeTone: "success" as const }
+            : { badge: "Completar" as const, badgeTone: "warning" as const }),
         },
         {
+          id: "bank",
           icon: "business",
           label: "Cuenta bancaria",
           sub: "Bancolombia",
           meta: "•••• 0284",
           route: null,
+          unavailableMessage:
+            "Cash-out a tu cuenta bancaria llega en Sprint 6 con la integración de Bold (Colombia) y rails locales LATAM.",
         },
         {
+          id: "guardians",
           icon: "people",
           label: "Guardianes",
           sub: "Recovery social",
           meta: "3 de 5",
           route: null,
+          unavailableMessage:
+            "Squads-based social recovery llega en Sprint 7. Por ahora podés explorar la idea en /privacy.",
         },
       ],
     },
     {
+      key: "app",
       header: "App",
       items: [
         {
+          id: "appearance",
           icon: "contrast",
           label: "Apariencia",
           sub: "Tema",
@@ -134,25 +226,81 @@ export default function ProfileScreen() {
           route: "/appearance",
         },
         {
+          id: "notifications",
           icon: "notifications",
           label: "Notificaciones",
           sub: "Push · Email",
-          meta: "Activas",
+          meta: unreadCount > 0 ? `${unreadCount} sin leer` : "Activas",
           route: null,
+          unavailableMessage:
+            "El centro de notificaciones (push + email + in-app) llega en Sprint 7.",
         },
         {
+          id: "language",
+          icon: "language",
+          label: "Idioma",
+          sub: "App language",
+          meta: "Español",
+          route: null,
+          unavailableMessage:
+            "El selector de idioma llega cuando expandamos beyond LATAM (Sprint 8). Por ahora todo en español.",
+        },
+        {
+          id: "support",
           icon: "chatbubble-ellipses",
           label: "Soporte",
           sub: "Chat · Discord",
           meta: "Respuesta <24h",
           route: null,
+          unavailableMessage:
+            "El canal de soporte se abre con el lanzamiento beta. Mientras tanto: hello@moneto.app",
+        },
+      ],
+    },
+    {
+      key: "legal",
+      header: "Legal",
+      items: [
+        {
+          id: "tos",
+          icon: "document-outline",
+          label: "Términos de servicio",
+          sub: "Versión 0.1",
+          route: null,
+          unavailableMessage:
+            "Los TOS se publican antes del lanzamiento beta (Sprint 8) — hoy estamos en pre-launch.",
+        },
+        {
+          id: "privacy-policy",
+          icon: "lock-closed-outline",
+          label: "Privacidad",
+          sub: "Cómo manejamos tu data",
+          route: null,
+          unavailableMessage:
+            "La política de privacidad se publica antes del lanzamiento beta (Sprint 8).",
         },
       ],
     },
   ];
 
   return (
-    <Screen padded edges={["top"]} scroll>
+    <Screen
+      padded
+      edges={["top"]}
+      scroll
+      scrollProps={{
+        refreshControl: (
+          <RefreshControl
+            refreshing={dashboard.isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.brand.primary}
+            colors={[colors.brand.primary]}
+            progressBackgroundColor={colors.bg.elevated}
+          />
+        ),
+      }}
+    >
+      {/* Hero */}
       <Animated.View
         entering={FadeInDown.duration(400)}
         style={{
@@ -166,44 +314,24 @@ export default function ProfileScreen() {
         <View style={{ alignItems: "center", gap: 4 }}>
           <Text variant="h2">{user.name}</Text>
           <Text variant="bodySmall" tone="tertiary">
-            {user.handle} · Colombia
+            {handle} · {country.flag} {country.name}
           </Text>
         </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 999,
-            backgroundColor: "rgba(107, 122, 56, 0.16)",
-          }}
-        >
-          <Ionicons name="shield-checkmark" size={12} color={colors.success} />
-          <Text variant="label" style={{ color: colors.success }}>
-            KYC nivel 2 verificado
-          </Text>
-        </View>
+        <KycBadge kycLevel={profile.kycLevel} onPress={handleKycBadgePress} />
       </Animated.View>
 
+      {/* Sections */}
       {sections.map((section, si) => (
         <Animated.View
-          key={section.header}
+          key={section.key}
           entering={FadeInDown.duration(400).delay(80 + si * 60)}
           style={{ marginTop: SECTION_GAP }}
         >
           <SectionHeader title={section.header} />
           <Card variant="elevated" padded={false} radius="lg">
             {section.items.map((item, i) => (
-              <View key={item.label}>
-                <SettingRow
-                  item={item}
-                  onPress={() => {
-                    haptics.tap();
-                    if (item.route) router.push(item.route as Href);
-                  }}
-                />
+              <View key={item.id}>
+                <SettingRow item={item} onPress={() => handleRowPress(section.key, item)} />
                 {i < section.items.length - 1 && (
                   <View style={{ paddingHorizontal: 16 }}>
                     <Divider />
@@ -215,12 +343,14 @@ export default function ProfileScreen() {
         </Animated.View>
       ))}
 
+      {/* Logout */}
       <Pressable
         onPress={handleLogout}
         disabled={isLoggingOut}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityState={{ disabled: isLoggingOut, busy: isLoggingOut }}
+        accessibilityLabel="Cerrar sesión"
         style={({ pressed }) => ({
           marginTop: SECTION_GAP,
           opacity: isLoggingOut ? 0.5 : pressed ? 0.55 : 1,
@@ -244,6 +374,84 @@ export default function ProfileScreen() {
   );
 }
 
+// ─── Helpers locales ─────────────────────────────────────────────────────────
+
+function kycSubLabel(level: 0 | 1 | 2 | 3): string {
+  switch (level) {
+    case 0:
+      return "Necesario para mover montos mayores";
+    case 1:
+      return "Nivel 1";
+    case 2:
+      return "Nivel 2";
+    case 3:
+      return "Nivel 3";
+  }
+}
+
+function kycMetaLabel(level: 0 | 1 | 2 | 3): string {
+  switch (level) {
+    case 0:
+      return "$200 lifetime";
+    case 1:
+      return "$2.000 / mes";
+    case 2:
+      return "$10.000 / mes";
+    case 3:
+      return "Sin límite";
+  }
+}
+
+/**
+ * Badge inline del KYC. Tres estados:
+ * - level 0 → "Completá tu verificación", warning, tappable → /kyc.
+ * - level >= 1 → "KYC nivel X verificado", success, NO tappable.
+ *
+ * Usamos `colors.success` y `colors.warning` (no danger) — coherente con
+ * colors.txt: *"red is for destructive."* KYC pendiente NO es
+ * destructive, es amarillo "atención".
+ */
+function KycBadge({ kycLevel, onPress }: { kycLevel: 0 | 1 | 2 | 3; onPress: () => void }) {
+  const { colors } = useTheme();
+  const verified = kycLevel >= 1;
+
+  const tone = verified ? colors.success : colors.warning;
+  // RGBA tinted del color base — 0.16 alpha para que el chip se sienta
+  // "iluminado" sin gritar. Coherente con el tinted background pattern
+  // del resto de badges (TransactionRow icon bg, etc).
+  const tintedBg = verified ? "rgba(168, 182, 90, 0.16)" : "rgba(224, 169, 82, 0.16)";
+
+  const label = verified ? `KYC nivel ${kycLevel} verificado` : "Completá tu verificación";
+  const icon = verified ? "shield-checkmark" : "alert-circle";
+
+  return (
+    <Pressable
+      onPress={verified ? undefined : onPress}
+      disabled={verified}
+      accessibilityRole={verified ? "text" : "button"}
+      accessibilityLabel={label}
+      style={({ pressed }) => ({ opacity: !verified && pressed ? 0.7 : 1 })}
+    >
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+          borderRadius: 999,
+          backgroundColor: tintedBg,
+        }}
+      >
+        <Ionicons name={icon} size={12} color={tone} />
+        <Text variant="label" style={{ color: tone }}>
+          {label}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 /**
  * Row iOS-Settings-grade con estructura 2-columnas en AMBAS líneas:
  *
@@ -254,8 +462,6 @@ export default function ProfileScreen() {
  *
  * TOP LINE:    label (flex:1)          badge opcional
  * BOTTOM LINE: sub (izq)               meta (der)
- *
- * Siempre contenido a izquierda Y derecha en ambas líneas = estructura visible.
  */
 function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
   const { colors } = useTheme();
@@ -264,33 +470,45 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
     item.badgeTone === "brand"
       ? "rgba(197, 103, 64, 0.18)"
       : item.badgeTone === "success"
-        ? "rgba(107, 122, 56, 0.18)"
-        : "rgba(255, 255, 255, 0.08)"; // visible en card elevated
+        ? "rgba(168, 182, 90, 0.18)"
+        : item.badgeTone === "warning"
+          ? "rgba(224, 169, 82, 0.18)"
+          : "rgba(255, 255, 255, 0.08)";
 
   const iconColor =
     item.badgeTone === "brand"
       ? colors.brand.primary
       : item.badgeTone === "success"
         ? colors.success
-        : colors.text.secondary;
+        : item.badgeTone === "warning"
+          ? colors.warning
+          : colors.text.secondary;
 
   const badgeBg =
     item.badgeTone === "brand"
       ? "rgba(197, 103, 64, 0.16)"
       : item.badgeTone === "success"
-        ? "rgba(107, 122, 56, 0.16)"
-        : colors.bg.overlay;
+        ? "rgba(168, 182, 90, 0.16)"
+        : item.badgeTone === "warning"
+          ? "rgba(224, 169, 82, 0.16)"
+          : colors.bg.overlay;
 
   const badgeFg =
     item.badgeTone === "brand"
       ? colors.brand.primary
       : item.badgeTone === "success"
         ? colors.success
-        : colors.text.secondary;
+        : item.badgeTone === "warning"
+          ? colors.warning
+          : colors.text.secondary;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
-      {/* Layout exactamente como VaultRow: View plano con todo el styling */}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.label}, ${item.sub}${item.meta ? `, ${item.meta}` : ""}`}
+      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+    >
       <View
         style={{
           flexDirection: "row",
@@ -300,7 +518,6 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
           gap: 12,
         }}
       >
-        {/* Icon 48×48 */}
         <View
           style={{
             width: 48,
@@ -315,9 +532,7 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
           <Ionicons name={item.icon} size={20} color={iconColor} />
         </View>
 
-        {/* Content column */}
         <View style={{ flex: 1, minWidth: 0 }}>
-          {/* TOP LINE: label + badge (si hay) */}
           <View
             style={{
               flexDirection: "row",
@@ -331,7 +546,7 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
               {item.label}
             </Text>
 
-            {item.badge && (
+            {item.badge ? (
               <View
                 style={{
                   paddingHorizontal: 8,
@@ -345,10 +560,9 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
                   {item.badge}
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
 
-          {/* BOTTOM LINE: sub (izq) + meta + chevron (der, inline y alineados) */}
           <View
             style={{
               flexDirection: "row",
@@ -368,11 +582,11 @@ function SettingRow({ item, onPress }: { item: RowItem; onPress: () => void }) {
                 flexShrink: 0,
               }}
             >
-              {item.meta && (
+              {item.meta ? (
                 <Text variant="bodySmall" tone="secondary" numberOfLines={1}>
                   {item.meta}
                 </Text>
-              )}
+              ) : null}
               <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
             </View>
           </View>
