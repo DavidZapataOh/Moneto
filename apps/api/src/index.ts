@@ -15,6 +15,7 @@ import { corsMiddleware } from "./middleware/cors";
 import { formatError, requestIdMiddleware } from "./middleware/error-handler";
 import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
 import meRoutes from "./routes/me";
+import pricesRoutes from "./routes/prices";
 
 interface KVNamespaceBinding {
   get(key: string): Promise<string | null>;
@@ -34,6 +35,12 @@ type Bindings = {
   SUPABASE_SERVICE_ROLE_KEY?: string;
   /** KV namespace para rate limit counters — opcional, fallback in-memory. */
   RATE_LIMITS?: KVNamespaceBinding;
+  /** Helius API key (server-side only — Sprint 3.02). */
+  HELIUS_API_KEY?: string;
+  /** "mainnet-beta" | "devnet" — default mainnet-beta (Sprint 3.02). */
+  SOLANA_NETWORK?: string;
+  /** Si "false", PriceService usa Stub (devnet/tests). Default Pyth. */
+  USE_PYTH?: string;
 };
 
 const SERVICE_NAME = "moneto-api";
@@ -192,6 +199,10 @@ app.use(
 // `/api/me/*` — smoke + preferences (Sprint 1.05). El sub-router hereda
 // el authMiddleware + per-user rate limit que se aplican arriba a `/api/*`.
 app.route("/api/me", meRoutes);
+
+// `/api/prices/*` — Pyth Hermes prices (Sprint 3.03). Cache 5s + stale
+// fallback. Hereda authMiddleware + rate limit per-user.
+app.route("/api/prices", pricesRoutes);
 
 // ─── Fallback handlers ─────────────────────────────────────────────────────
 
