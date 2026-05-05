@@ -13,7 +13,7 @@ import {
 } from "@moneto/ui";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo } from "react";
-import { Alert, Pressable, RefreshControl, View } from "react-native";
+import { Pressable, RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
 
 import { capture, Events, getPostHog } from "@/lib/observability";
@@ -80,14 +80,8 @@ export default function ActivosScreen() {
     router.push("/asset-priorities");
   }, [router]);
 
-  const handleAssetPress = useCallback(() => {
-    haptics.tap();
-    Alert.alert(
-      "Detalle del asset",
-      "Las pantallas de detalle por asset (gráficas, history filtrada, swap rápido) llegan en Sprint 3.",
-      [{ text: "Entendido" }],
-    );
-  }, []);
+  // Sprint 3.05: AssetRow's default ya navega a `/activos/:id` — no
+  // override necesario.
 
   const formatHidden = (value: string) => (balanceHidden ? "•••" : value);
 
@@ -268,7 +262,7 @@ export default function ActivosScreen() {
               <Card variant="elevated" padded={false} radius="lg">
                 {earning.map((asset, i) => (
                   <View key={asset.id}>
-                    <AssetRow asset={asset} onPress={handleAssetPress} />
+                    <AssetRow asset={asset} />
                     {i < earning.length - 1 && (
                       <View style={{ paddingHorizontal: 16 }}>
                         <Divider />
@@ -287,7 +281,7 @@ export default function ActivosScreen() {
               <Card variant="elevated" padded={false} radius="lg">
                 {holdings.map((asset, i) => (
                   <View key={asset.id}>
-                    <AssetRow asset={asset} onPress={handleAssetPress} />
+                    <AssetRow asset={asset} />
                     {i < holdings.length - 1 && (
                       <View style={{ paddingHorizontal: 16 }}>
                         <Divider />

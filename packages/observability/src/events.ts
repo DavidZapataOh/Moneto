@@ -46,6 +46,10 @@ export const Events = {
   assets_priorities_opened: "assets_priorities_opened",
   /** User reordenó la prioridad de un asset (move up/down). */
   assets_priorities_changed: "assets_priorities_changed",
+  /** User abrió el detalle de un asset (Sprint 3.05). */
+  asset_detail_viewed: "asset_detail_viewed",
+  /** User cambió el rango del chart de precio (1H..ALL). */
+  asset_chart_range_changed: "asset_chart_range_changed",
   /** User tap en un row del screen "Yo" (settings). Funnel diagnóstico. */
   profile_setting_tapped: "profile_setting_tapped",
   send_initiated: "send_initiated",
@@ -149,6 +153,11 @@ export interface EventProps {
   [Events.assets_priorities_changed]: {
     asset: "usd" | "cop" | "sol" | "btc";
     direction: -1 | 1;
+  };
+  [Events.asset_detail_viewed]: { asset_id: string };
+  [Events.asset_chart_range_changed]: {
+    asset_id: string;
+    range: "1H" | "1D" | "7D" | "30D" | "1Y" | "ALL";
   };
   [Events.profile_setting_tapped]: {
     section: "privacidad" | "cuenta" | "app" | "legal";

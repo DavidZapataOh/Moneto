@@ -36,7 +36,8 @@ function AssetRowImpl({ asset, onPress }: AssetRowProps) {
       return;
     }
     haptics.tap();
-    router.push(`/(tabs)/activos?asset=${asset.id}` as Href);
+    // Sprint 3.05: navega al detalle. Antes era query param noop.
+    router.push(`/activos/${asset.id}` as Href);
   };
 
   // Format native balance

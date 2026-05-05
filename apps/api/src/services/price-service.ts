@@ -37,6 +37,42 @@ export interface PriceService {
    * badge "Precio actualizando…" cuando `isStale: true`.
    */
   getPriceWithMeta(id: AssetId): Promise<PriceMeta | null>;
+
+  /**
+   * Histórico de precios para charts (Sprint 3.05). Retorna una lista
+   * de candle/closes ordenados por timestamp ascending.
+   *
+   * Solo retorna data para volátiles (SOL/BTC/ETH) por ahora —
+   * stables-yielding history (yield earned over time) viene en
+   * Sprint 5+ con Reflect/Huma APIs.
+   *
+   * Retorna `null` si:
+   * - El asset no tiene historical source disponible.
+   * - El backend está degradado y no podemos servir.
+   *
+   * El UI debería render un empty state ("Sin historial disponible")
+   * cuando `null`.
+   */
+  getPriceHistory(id: AssetId, range: PriceHistoryRange): Promise<PriceHistory | null>;
+}
+
+/** Time range buckets — match con UI selector chips. */
+export type PriceHistoryRange = "1H" | "1D" | "7D" | "30D" | "1Y" | "ALL";
+
+export interface PriceHistoryPoint {
+  /** Epoch ms. */
+  t: number;
+  /** Close price USD. */
+  price: number;
+}
+
+export interface PriceHistory {
+  range: PriceHistoryRange;
+  /** Puntos ascending por t. */
+  points: PriceHistoryPoint[];
+  /** Source de este histórico. */
+  source: "pyth-benchmarks" | "stub";
+  fetchedAt: number;
 }
 
 export interface PriceMeta {
@@ -286,6 +322,140 @@ export class PythPriceService implements PriceService {
       cachedAt: nowMs,
     };
   }
+
+  // ─── Historical (Sprint 3.05) ─────────────────────────────────────
+
+  /**
+   * Pyth Benchmarks (`benchmarks.pyth.network`) ofrece el TradingView
+   * shim con histórico de candles. Free tier sin API key.
+   *
+   * Endpoint: `/v1/shims/tradingview/history?symbol=Crypto.SOL/USD&from=<unix>&to=<unix>&resolution=<m>`
+   * Resoluciones soportadas: `1`, `5`, `15`, `30`, `60`, `240`, `D`, `W`.
+   *
+   * Cache 5min en module scope — historical data no cambia hasta el
+   * próximo close del candle. Reduce hits en demos donde varios users
+   * ven el mismo asset.
+   */
+  async getPriceHistory(id: AssetId, range: PriceHistoryRange): Promise<PriceHistory | null> {
+    const meta = getAsset(id);
+    if (meta.category !== "volatile") {
+      // Stables: no historical price (peg). Sprint 5+ wirea yield-earned
+      // history para stables yielding (USDG/PYUSD).
+      return null;
+    }
+
+    const symbol = pythBenchmarkSymbol(id);
+    if (!symbol) return null;
+
+    const cacheKey = `${id}:${range}`;
+    const cached = historyCache.get(cacheKey);
+    if (cached && Date.now() - cached.fetchedAt < HISTORY_CACHE_TTL_MS) {
+      return cached.history;
+    }
+
+    const { from, to, resolution } = computeRangeWindow(range);
+    const url = `${PYTH_BENCHMARKS_BASE}/v1/shims/tradingview/history?symbol=${encodeURIComponent(symbol)}&from=${from}&to=${to}&resolution=${resolution}`;
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) {
+        log.warn("benchmarks non-2xx", { id, range, status: res.status });
+        return cached?.history ?? null;
+      }
+      const data = (await res.json()) as PythBenchmarksResponse;
+      // Pyth Benchmarks retorna `s: "ok" | "no_data"` + arrays paralelos.
+      if (data.s !== "ok" || !Array.isArray(data.t) || !Array.isArray(data.c)) {
+        log.warn("benchmarks no data", { id, range, status: data.s });
+        return cached?.history ?? null;
+      }
+
+      const points: PriceHistoryPoint[] = [];
+      for (let i = 0; i < data.t.length; i++) {
+        const t = data.t[i];
+        const c = data.c[i];
+        if (typeof t === "number" && typeof c === "number" && Number.isFinite(c)) {
+          points.push({ t: t * 1000, price: c });
+        }
+      }
+
+      const history: PriceHistory = {
+        range,
+        points,
+        source: "pyth-benchmarks",
+        fetchedAt: Date.now(),
+      };
+      historyCache.set(cacheKey, { history, fetchedAt: history.fetchedAt });
+      return history;
+    } catch (err) {
+      log.warn("benchmarks fetch failed", { id, range, err: String(err) });
+      return cached?.history ?? null;
+    }
+  }
+}
+
+/**
+ * Pyth Benchmarks symbol mapping. Sprint 3.05 cubre los 3 volátiles
+ * que tienen Pyth feed; cuando expandamos a más volátiles se mapean acá.
+ */
+function pythBenchmarkSymbol(id: AssetId): string | null {
+  switch (id) {
+    case "sol":
+      return "Crypto.SOL/USD";
+    case "btc":
+      return "Crypto.BTC/USD";
+    case "eth":
+      return "Crypto.ETH/USD";
+    default:
+      return null;
+  }
+}
+
+const PYTH_BENCHMARKS_BASE = "https://benchmarks.pyth.network";
+const HISTORY_CACHE_TTL_MS = 5 * 60_000; // 5min — candles don't update intra-bar
+const historyCache = new Map<string, { history: PriceHistory; fetchedAt: number }>();
+
+interface PythBenchmarksResponse {
+  s: "ok" | "no_data" | "error";
+  t?: number[]; // timestamps unix seconds
+  c?: number[]; // close prices
+  o?: number[];
+  h?: number[];
+  l?: number[];
+  v?: number[];
+}
+
+/**
+ * Compute (from, to, resolution) tuple del range. Resolution se elige
+ * para mantener ~50–365 puntos en el chart — suficiente para curva
+ * suave sin sobre-densificar.
+ *
+ * Pyth Benchmarks resolutions:
+ *  `1` (1m), `5`, `15`, `30`, `60` (1h), `240` (4h), `D` (1d), `W` (1w).
+ */
+function computeRangeWindow(range: PriceHistoryRange): {
+  from: number;
+  to: number;
+  resolution: string;
+} {
+  const nowSec = Math.floor(Date.now() / 1000);
+  switch (range) {
+    case "1H":
+      return { from: nowSec - 60 * 60, to: nowSec, resolution: "1" };
+    case "1D":
+      return { from: nowSec - 24 * 60 * 60, to: nowSec, resolution: "5" };
+    case "7D":
+      return { from: nowSec - 7 * 24 * 60 * 60, to: nowSec, resolution: "60" };
+    case "30D":
+      return { from: nowSec - 30 * 24 * 60 * 60, to: nowSec, resolution: "240" };
+    case "1Y":
+      return { from: nowSec - 365 * 24 * 60 * 60, to: nowSec, resolution: "D" };
+    case "ALL":
+      // Pyth has ~3y history para SOL/BTC/ETH — cap a 3y para evitar
+      // empty heads when feed is younger.
+      return { from: nowSec - 3 * 365 * 24 * 60 * 60, to: nowSec, resolution: "D" };
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -348,6 +518,66 @@ export class StubPriceService implements PriceService {
       isStale: false,
       source: "pyth-fresh",
     };
+  }
+
+  /**
+   * Sintetiza un histórico predecible para volátiles — usado en tests
+   * + devnet. Genera ~50 puntos con random walk centered en el spot
+   * stub. NO se usa para money-moving decisions (es signal solo de UI).
+   */
+  async getPriceHistory(id: AssetId, range: PriceHistoryRange): Promise<PriceHistory | null> {
+    const meta = getAsset(id);
+    if (meta.category !== "volatile") return null;
+
+    const stub = STUB_VOLATILE_PRICES[id];
+    if (!stub) return null;
+
+    const N = 50;
+    const nowMs = Date.now();
+    const windowMs = rangeToWindowMs(range);
+    const stepMs = windowMs / (N - 1);
+
+    // Seeded random walk — determinístico per (id, range) para tests.
+    const seed = id.charCodeAt(0) + range.charCodeAt(0);
+    let prng = seed;
+    const rand = () => {
+      prng = (prng * 9301 + 49297) % 233280;
+      return prng / 233280;
+    };
+
+    const points: PriceHistoryPoint[] = [];
+    let price = stub.spot;
+    for (let i = 0; i < N; i++) {
+      // ±0.5% por step.
+      const delta = (rand() - 0.5) * 0.01 * stub.spot;
+      price = Math.max(0.01, price + delta);
+      points.push({ t: nowMs - (N - 1 - i) * stepMs, price });
+    }
+
+    return {
+      range,
+      points,
+      source: "stub",
+      fetchedAt: nowMs,
+    };
+  }
+}
+
+function rangeToWindowMs(range: PriceHistoryRange): number {
+  const HOUR = 60 * 60 * 1000;
+  switch (range) {
+    case "1H":
+      return HOUR;
+    case "1D":
+      return 24 * HOUR;
+    case "7D":
+      return 7 * 24 * HOUR;
+    case "30D":
+      return 30 * 24 * HOUR;
+    case "1Y":
+      return 365 * 24 * HOUR;
+    case "ALL":
+      return 3 * 365 * 24 * HOUR;
   }
 }
 

@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   createPriceService,
+  type PriceHistoryRange,
   type PriceMeta,
   type PriceServiceEnv,
 } from "../services/price-service";
@@ -83,6 +84,55 @@ prices.post("/", zValidator("json", BatchSchema), async (c) => {
   }
 
   return c.json(result);
+});
+
+// ─── History ─────────────────────────────────────────────────────────
+
+const RANGE_VALUES = [
+  "1H",
+  "1D",
+  "7D",
+  "30D",
+  "1Y",
+  "ALL",
+] as const satisfies readonly PriceHistoryRange[];
+const HistoryQuerySchema = z.object({
+  range: z.enum(RANGE_VALUES).default("7D"),
+});
+
+prices.get("/:assetId/history", zValidator("query", HistoryQuerySchema), async (c) => {
+  const rawId = c.req.param("assetId");
+  const parsed = AssetIdSchema.safeParse(rawId);
+  if (!parsed.success) {
+    throw new HTTPException(400, { message: "invalid_asset_id" });
+  }
+  const assetId: AssetId = parsed.data;
+  const { range } = c.req.valid("query");
+
+  const service = createPriceService(c.env);
+  const history = await service.getPriceHistory(assetId, range);
+
+  if (!history) {
+    // Stable o asset sin source: 204 No Content sería semantic, pero
+    // mobile React Query maneja 200 + null más fácil. Devolvemos
+    // estructura vacía con `points: []` para que el chart muestre
+    // empty state.
+    return c.json({
+      assetId,
+      range,
+      points: [],
+      source: null,
+      fetchedAt: Date.now(),
+    });
+  }
+
+  return c.json({
+    assetId,
+    range: history.range,
+    points: history.points,
+    source: history.source,
+    fetchedAt: history.fetchedAt,
+  });
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────

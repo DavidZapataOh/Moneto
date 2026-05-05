@@ -45,7 +45,8 @@ export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
 
   const handleAssetPress = (assetId: string) => {
     haptics.tap();
-    router.push(`/(tabs)/activos?asset=${assetId}` as Href);
+    // Sprint 3.05: navega al detalle del asset (push de stack outside tabs).
+    router.push(`/activos/${assetId}` as Href);
   };
 
   const handleSeeAll = () => {

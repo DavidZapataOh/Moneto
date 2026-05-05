@@ -156,6 +156,10 @@ function Shell() {
             name="asset-priorities"
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
+          <Stack.Screen
+            name="activos/[id]"
+            options={{ presentation: "card", animation: "slide_from_right" }}
+          />
         </Stack>
         {/* OfflineBanner — slide-down banner cuando perdemos conexión.
             Mounted top-level para que esté visible en cualquier ruta. */}
