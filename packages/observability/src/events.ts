@@ -33,6 +33,9 @@ export const Events = {
   auth_failed: "auth_failed",
   onboarding_completed: "onboarding_completed",
 
+  // ── Navigation ───────────────────────────────────────────────────────
+  tab_switched: "tab_switched",
+
   // ── Core actions ─────────────────────────────────────────────────────
   balance_viewed: "balance_viewed",
   send_initiated: "send_initiated",
@@ -112,6 +115,10 @@ export interface EventProps {
   [Events.auth_succeeded]: { method: string; duration_ms: number };
   [Events.auth_failed]: { method: string; reason: string };
   [Events.onboarding_completed]: { total_duration_ms: number };
+  [Events.tab_switched]: {
+    from: "saldo" | "tarjeta" | "activos" | "yo";
+    to: "saldo" | "tarjeta" | "activos" | "yo";
+  };
   [Events.balance_viewed]: { tab: "saldo" | "tarjeta" | "activos" | "yo" };
   [Events.send_initiated]: { type: "p2p" | "cashout" };
   [Events.send_completed]: {
@@ -139,6 +146,15 @@ export interface EventProps {
 }
 
 /**
+ * Cliente mínimo compatible con `capture()`. Definido lo más permisivo
+ * posible para que PostHog (`PostHogEventProperties` con `JsonType` value
+ * constraint) y mocks de tests satisfagan el shape sin gymnastics de
+ * variance.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- intencional, ver doc arriba
+export type CaptureClient = { capture: (event: string, props?: any) => unknown };
+
+/**
  * Captura type-safe — usa este helper en lugar de pasar strings sueltos.
  *
  * @example
@@ -150,17 +166,17 @@ export interface EventProps {
  *   });
  */
 export function capture<E extends keyof EventProps>(
-  client: { capture: (event: string, props?: Record<string, unknown>) => void },
+  client: CaptureClient,
   event: E,
   props: EventProps[E],
 ): void;
 export function capture(
-  client: { capture: (event: string, props?: Record<string, unknown>) => void },
+  client: CaptureClient,
   event: EventName,
   props?: Record<string, unknown>,
 ): void;
 export function capture(
-  client: { capture: (event: string, props?: Record<string, unknown>) => void },
+  client: CaptureClient,
   event: string,
   props?: Record<string, unknown>,
 ): void {

@@ -1,10 +1,13 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme, haptics } from "@moneto/ui";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
+import { useCallback, useRef } from "react";
 import { Platform, View, StyleSheet } from "react-native";
 
+import { AnimatedTabIcon } from "@/components/AnimatedTabIcon";
+import { capture, Events, getPostHog } from "@/lib/observability";
 import { TAB_BAR_CONTENT_HEIGHT, useTabBarBottomPad } from "@hooks/useTabBarSpace";
+import { useUnreadNotificationCount } from "@hooks/useUnreadNotificationCount";
 
 /**
  * Bottom tab bar spec:
@@ -13,12 +16,33 @@ import { TAB_BAR_CONTENT_HEIGHT, useTabBarBottomPad } from "@hooks/useTabBarSpac
  * - Android gesture nav: 64dp content + 24dp inset = 88dp total
  * - Android 3-button: 64dp content + 48dp inset = 112dp total
  *
- * Icon 24pt (Apple HIG) / 24dp (Material) · label 11pt iOS / 12sp Android
+ * Icon 24pt (Apple HIG) / 24dp (Material) · label 11pt iOS / 12sp Android.
+ *
+ * BlurView nativo en iOS (intensity 80, premium feel), sólido en Android
+ * (la implementación BlurView en Android es buggy + costosa en perf).
  */
+
+type TabKey = "saldo" | "tarjeta" | "activos" | "yo";
+
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
   const bottomPad = useTabBarBottomPad();
   const totalHeight = TAB_BAR_CONTENT_HEIGHT + bottomPad;
+  const unreadCount = useUnreadNotificationCount();
+
+  // Track de la tab actual para reportar `tab_switched.from`. `useRef` —
+  // no queremos re-render cuando cambia, solo recordar el valor.
+  const currentTab = useRef<TabKey>("saldo");
+
+  const onTabPress = useCallback((next: TabKey) => {
+    haptics.select();
+    const prev = currentTab.current;
+    if (prev !== next) {
+      const ph = getPostHog();
+      if (ph) capture(ph, Events.tab_switched, { from: prev, to: next });
+      currentTab.current = next;
+    }
+  }, []);
 
   return (
     <Tabs
@@ -65,49 +89,75 @@ export default function TabsLayout() {
             <View style={{ flex: 1, backgroundColor: colors.bg.primary }} />
           ),
       }}
-      screenListeners={{
-        tabPress: () => haptics.select(),
-      }}
+      // Listener global — `screenListeners.tabPress` no permite leer el
+      // target de la tab, así que cada Screen abajo wirea un listener
+      // específico para enviar `from`/`to` correctos a PostHog.
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Saldo",
+          tabBarAccessibilityLabel: "Saldo",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "home" : "home-outline"} size={24} color={color} />
+            <AnimatedTabIcon
+              focused={focused}
+              icon={focused ? "home" : "home-outline"}
+              color={color}
+              label="Saldo"
+            />
           ),
         }}
+        listeners={{ tabPress: () => onTabPress("saldo") }}
       />
       <Tabs.Screen
         name="card"
         options={{
           title: "Tarjeta",
+          tabBarAccessibilityLabel: "Tarjeta",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "card" : "card-outline"} size={24} color={color} />
+            <AnimatedTabIcon
+              focused={focused}
+              icon={focused ? "card" : "card-outline"}
+              color={color}
+              label="Tarjeta"
+            />
           ),
         }}
+        listeners={{ tabPress: () => onTabPress("tarjeta") }}
       />
       <Tabs.Screen
         name="activos"
         options={{
           title: "Activos",
+          tabBarAccessibilityLabel: "Activos",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "layers" : "layers-outline"} size={24} color={color} />
+            <AnimatedTabIcon
+              focused={focused}
+              icon={focused ? "layers" : "layers-outline"}
+              color={color}
+              label="Activos"
+            />
           ),
         }}
+        listeners={{ tabPress: () => onTabPress("activos") }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Yo",
+          tabBarAccessibilityLabel:
+            unreadCount > 0 ? `Yo, ${unreadCount} notificaciones sin leer` : "Yo",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "person-circle" : "person-circle-outline"}
-              size={24}
+            <AnimatedTabIcon
+              focused={focused}
+              icon={focused ? "person-circle" : "person-circle-outline"}
               color={color}
+              label="Yo"
+              {...(unreadCount > 0 ? { badge: unreadCount } : {})}
             />
           ),
         }}
+        listeners={{ tabPress: () => onTabPress("yo") }}
       />
     </Tabs>
   );
