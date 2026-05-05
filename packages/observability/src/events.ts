@@ -54,7 +54,12 @@ export const Events = {
   receive_link_shared: "receive_link_shared",
   receive_link_copied: "receive_link_copied",
   swap_initiated: "swap_initiated",
+  /** Quote disparado (post-debounce). Funnel input. */
+  swap_quote_requested: "swap_quote_requested",
+  /** Swap on-chain completado con `signature`. */
   swap_completed: "swap_completed",
+  /** Swap falló — `error_code` discrimina por SwapErrorCode. */
+  swap_failed: "swap_failed",
   swap_high_slippage_warning_shown: "swap_high_slippage_warning_shown",
   card_spend: "card_spend",
   /** User toggled la card freeze (UI optimistic; Sprint 6 server-side propaga). */
@@ -160,11 +165,24 @@ export interface EventProps {
   };
   [Events.send_failed]: { type: "p2p" | "cashout"; reason: string };
   [Events.receive_link_shared]: { channel: "whatsapp" | "email" | "copy" | "qr" };
+  [Events.swap_quote_requested]: {
+    input: string;
+    output: string;
+    slippage_bps: number;
+  };
   [Events.swap_completed]: {
     from_asset: string;
     to_asset: string;
     slippage_bps: number;
     amount_bucket: AmountBucket;
+    /** Hops del route plan — 1 = directo, >1 = multi-hop. */
+    hops: number;
+  };
+  [Events.swap_failed]: {
+    input: string;
+    output: string;
+    /** SwapErrorCode (QUOTE_STALE, INSUFFICIENT_LIQUIDITY, etc). */
+    error_code: string;
   };
   [Events.card_spend]: { merchant_category: string; amount_bucket: AmountBucket };
   [Events.card_frozen]: { frozen: boolean };

@@ -1,12 +1,15 @@
 /**
- * @moneto/solana — Solana helpers, Umbra wrappers, Jupiter helpers, Squads multisig.
+ * @moneto/solana — Solana helpers, Jupiter integration, Squads, Umbra.
  *
- * Populated incrementally:
- * - Sprint 3: balance fetching, Pyth, Jupiter
- * - Sprint 5: Umbra SDK wrapper, Token-2022 Confidential Balances
- * - Sprint 7: Squads vault service
+ * Surface por sprint:
+ * - Sprint 3.04 ✅: Jupiter swap engine (`./jupiter`).
+ * - Sprint 5: Umbra wrapper, Token-2022 Confidential Balances.
+ * - Sprint 7: Squads vault service.
  *
- * Stub for Sprint 0 — exports placeholder so package resolves cleanly.
+ * Package no React, no platform-specific — consumed por mobile (Expo)
+ * y server (Workers / Deno) cuando aplique.
  */
 
-export const SOLANA_PACKAGE_VERSION = "0.0.0-stub";
+export const SOLANA_PACKAGE_VERSION = "0.1.0-sprint-3.04";
+
+export * from "./jupiter";
