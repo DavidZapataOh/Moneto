@@ -34,6 +34,6 @@
     "@moneto/tsconfig": "workspace:*",
     "eslint": "^8.57.1",
     "typescript": "~5.9.2",
-    "wrangler": "^3.95.0"
+    "wrangler": "^4.88.0"
   }
 }
