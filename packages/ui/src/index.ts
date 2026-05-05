@@ -20,6 +20,10 @@
 export { ThemeProvider, ThemeContext, type ThemeContextValue } from "./providers/ThemeProvider";
 export { useTheme } from "./hooks/useTheme";
 export { useHaptics, haptics, type HapticPattern } from "./hooks/useHaptics";
+export { useMotionConfig, type MotionConfig } from "./hooks/useMotionConfig";
+
+// Animation presets
+export { entrances, useEntrances } from "./animations/entrances";
 
 // Primitives
 export { PressableScale, type PressableScaleProps } from "./components/PressableScale";

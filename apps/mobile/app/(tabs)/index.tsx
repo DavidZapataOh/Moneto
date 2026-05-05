@@ -1,10 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Screen, Text, Card, Avatar, Divider, SectionHeader, useTheme, haptics } from "@moneto/ui";
+import {
+  Screen,
+  Text,
+  Card,
+  Avatar,
+  Divider,
+  SectionHeader,
+  haptics,
+  useEntrances,
+  useTheme,
+} from "@moneto/ui";
 import { getGreeting } from "@moneto/utils";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { View, Pressable, RefreshControl } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 import { capture, Events, getPostHog } from "@/lib/observability";
 import { AssetStrip } from "@components/features/AssetStrip";
@@ -42,6 +52,7 @@ export default function HomeScreen() {
 
   const isLoading = dashboard.status === "loading";
   const recentTxs = dashboard.transactions.slice(0, TX_PREVIEW_COUNT);
+  const motion = useEntrances();
 
   const handleRefresh = useCallback(async () => {
     haptics.tap();
@@ -116,7 +127,7 @@ export default function HomeScreen() {
           porque un fallo en BalanceHero (Reanimated worklet, format crash)
           rompería la pantalla entera y esta es la zona más crítica. */}
       <ScreenErrorBoundary feature="saldo.balance-hero">
-        <Animated.View entering={FadeInDown.duration(400).delay(40)}>
+        <Animated.View entering={motion.sectionDelayed(40)}>
           {isLoading ? (
             <BalanceSkeleton />
           ) : (
@@ -131,18 +142,12 @@ export default function HomeScreen() {
       </ScreenErrorBoundary>
 
       {/* Quick actions */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(120)}
-        style={{ marginTop: SECTION_GAP }}
-      >
+      <Animated.View entering={motion.sectionDelayed(120)} style={{ marginTop: SECTION_GAP }}>
         <QuickActions />
       </Animated.View>
 
       {/* Asset strip — horizontal scroll */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(160)}
-        style={{ marginTop: SECTION_GAP }}
-      >
+      <Animated.View entering={motion.sectionDelayed(160)} style={{ marginTop: SECTION_GAP }}>
         <SectionHeader
           title="Tus activos"
           action={{
@@ -165,10 +170,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* Yield module — card clickable */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(200)}
-        style={{ marginTop: SECTION_GAP }}
-      >
+      <Animated.View entering={motion.sectionDelayed(200)} style={{ marginTop: SECTION_GAP }}>
         <SectionHeader
           title="Rendimiento"
           action={{
@@ -212,10 +214,7 @@ export default function HomeScreen() {
           (e.g., date format de tx malformada), el resto de Saldo sigue
           funcional con su retry button propio. */}
       <ScreenErrorBoundary feature="saldo.transactions">
-        <Animated.View
-          entering={FadeInDown.duration(400).delay(280)}
-          style={{ marginTop: SECTION_GAP }}
-        >
+        <Animated.View entering={motion.sectionDelayed(280)} style={{ marginTop: SECTION_GAP }}>
           <SectionHeader
             title="Movimientos"
             {...(recentTxs.length > 0

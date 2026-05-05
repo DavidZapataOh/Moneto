@@ -1,7 +1,8 @@
 import { springs, durations } from "@moneto/theme";
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useEffect } from "react";
 import { Pressable, type PressableProps, type View } from "react-native";
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -58,6 +59,17 @@ export const PressableScale = forwardRef<View, PressableScaleProps>(function Pre
 ) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
+
+  // Cleanup en unmount — si el componente se desmonta mid-animation
+  // (e.g., user navega out durante un press), Reanimated puede tener
+  // animations pending que retienen referencias al SharedValue. Cancel
+  // explícito evita el leak.
+  useEffect(() => {
+    return () => {
+      cancelAnimation(scale);
+      cancelAnimation(opacity);
+    };
+  }, [scale, opacity]);
 
   const handlePressIn = useCallback(() => {
     scale.value = withSpring(scaleTo, springs.tap);

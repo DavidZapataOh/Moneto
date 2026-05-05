@@ -8,12 +8,13 @@ import {
   SectionHeader,
   Text,
   haptics,
+  useEntrances,
   useTheme,
 } from "@moneto/ui";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { Alert, Pressable, RefreshControl, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 import { capture, Events, getPostHog } from "@/lib/observability";
 import { AssetDonut } from "@components/features/AssetDonut";
@@ -53,6 +54,7 @@ export default function ActivosScreen() {
   const bottomSpace = useTabBarSpace();
   const data = useAssetsData();
 
+  const motion = useEntrances();
   const earning = data.assets.filter((a) => a.isEarning);
   const holdings = data.assets.filter((a) => !a.isEarning);
   const isEmpty = data.totalPatrimonioUsd === 0;
@@ -109,7 +111,7 @@ export default function ActivosScreen() {
       ) : (
         <>
           {/* Hero — Patrimonio total */}
-          <Animated.View entering={FadeInDown.duration(400)}>
+          <Animated.View entering={motion.hero}>
             <Card variant="elevated" padded radius="lg">
               <View
                 style={{
@@ -257,10 +259,7 @@ export default function ActivosScreen() {
 
           {/* Rindiendo */}
           {earning.length > 0 ? (
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(80)}
-              style={{ marginTop: SECTION_GAP }}
-            >
+            <Animated.View entering={motion.sectionDelayed(80)} style={{ marginTop: SECTION_GAP }}>
               <SectionHeader title="Rindiendo" />
               <Card variant="elevated" padded={false} radius="lg">
                 {earning.map((asset, i) => (
@@ -279,10 +278,7 @@ export default function ActivosScreen() {
 
           {/* Holdings (volátiles) */}
           {holdings.length > 0 ? (
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(140)}
-              style={{ marginTop: SECTION_GAP }}
-            >
+            <Animated.View entering={motion.sectionDelayed(140)} style={{ marginTop: SECTION_GAP }}>
               <SectionHeader title="Holdings" />
               <Card variant="elevated" padded={false} radius="lg">
                 {holdings.map((asset, i) => (
@@ -304,10 +300,7 @@ export default function ActivosScreen() {
               frágil de la screen. Un crash en el donut NO debe tirar
               el resto. */}
           <ScreenErrorBoundary feature="activos.donut">
-            <Animated.View
-              entering={FadeInDown.duration(400).delay(200)}
-              style={{ marginTop: SECTION_GAP }}
-            >
+            <Animated.View entering={motion.sectionDelayed(200)} style={{ marginTop: SECTION_GAP }}>
               <SectionHeader title="Dónde rinde tu dinero" />
               <Card variant="elevated" padded radius="lg">
                 <AssetDonut
@@ -321,7 +314,7 @@ export default function ActivosScreen() {
 
           {/* Privacy footer */}
           <Animated.View
-            entering={FadeInDown.duration(400).delay(260)}
+            entering={motion.sectionDelayed(260)}
             style={{ marginTop: 16, flexDirection: "row", gap: 12 }}
           >
             <Ionicons

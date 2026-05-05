@@ -7,24 +7,38 @@ import * as Haptics from "expo-haptics";
  * feedback breve. Patrones agrupados por intención semántica, no por
  * intensidad física.
  *
- * Sprint 2.07 amplía esto con policy engine + reduced-motion support
- * (respetar `Settings → Accessibility → Reduce motion`).
+ * Defensiva: cada call está wrapped en try/catch silencioso. Razón —
+ * Android < 8 + algunos OEMs sin Taptic engine pueden tirar exceptions
+ * en el bridge. Un fallo de haptic NO debe crashear un button tap.
+ *
+ * Reduced-motion: iOS al activar "Reduce Motion" suprime haptics
+ * automáticamente a nivel UIKit; Android no tiene equivalente directo.
+ * Si el user lo necesita, puede silenciar el sistema completo.
  */
+
+function safe(fn: () => Promise<void> | void): void {
+  try {
+    void fn();
+  } catch {
+    // Swallow — haptic failure no debe propagar al UI.
+  }
+}
+
 export const haptics = {
   /** Default tap (Pressable, IconButton). */
-  tap: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
+  tap: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
   /** Acción importante (Button primary, sheet open). */
-  medium: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium),
+  medium: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
   /** Acción crítica (confirm send, destructive). */
-  heavy: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy),
+  heavy: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)),
   /** Resultado positivo (transacción exitosa). */
-  success: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+  success: () => safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
   /** Atención requerida (validación blanda). */
-  warning: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning),
+  warning: () => safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
   /** Falla / error. */
-  error: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
+  error: () => safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
   /** Toggle / picker step (selection change). */
-  select: () => Haptics.selectionAsync(),
+  select: () => safe(() => Haptics.selectionAsync()),
 } as const;
 
 export type HapticPattern = keyof typeof haptics;

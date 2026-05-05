@@ -7,13 +7,14 @@ import {
   Text,
   Card,
   Divider,
-  useTheme,
   haptics,
+  useEntrances,
+  useTheme,
 } from "@moneto/ui";
 import * as Clipboard from "expo-clipboard";
 import { useCallback, useState } from "react";
 import { Alert, Platform, Pressable, RefreshControl, View } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 import { capture, Events, getPostHog } from "@/lib/observability";
 import { EmptyCardState } from "@components/features/EmptyCardState";
@@ -52,6 +53,7 @@ export default function CardScreen() {
   const bottomSpace = useTabBarSpace();
   const dashboard = useDashboardData();
   const pan = useCardPanReveal();
+  const motion = useEntrances();
 
   const frozen = card.status === "frozen";
   const notProvisioned = card.status === "not_provisioned";
@@ -146,7 +148,7 @@ export default function CardScreen() {
               acceso a `freeze`. */}
           <ScreenErrorBoundary feature="card.visual">
             <Animated.View
-              entering={FadeInDown.duration(420)}
+              entering={motion.hero}
               style={{ alignItems: "center", marginBottom: 20 }}
             >
               <VirtualCard
@@ -166,7 +168,7 @@ export default function CardScreen() {
 
           {/* Status row */}
           <Animated.View
-            entering={FadeIn.duration(300).delay(120)}
+            entering={motion.fadeDelayed(120)}
             style={{
               flexDirection: "row",
               justifyContent: "center",
@@ -200,7 +202,7 @@ export default function CardScreen() {
 
           {/* Actions row */}
           <Animated.View
-            entering={FadeInDown.duration(400).delay(180)}
+            entering={motion.sectionDelayed(180)}
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
@@ -230,7 +232,7 @@ export default function CardScreen() {
           </Animated.View>
 
           {/* Daily usage */}
-          <Animated.View entering={FadeInDown.duration(400).delay(260)}>
+          <Animated.View entering={motion.sectionDelayed(260)}>
             <SectionHeader title="Gastado hoy" />
             <Card variant="elevated" padded radius="lg">
               <View
@@ -283,10 +285,7 @@ export default function CardScreen() {
           </Animated.View>
 
           {/* Settings */}
-          <Animated.View
-            entering={FadeInDown.duration(400).delay(320)}
-            style={{ marginTop: SECTION_GAP }}
-          >
+          <Animated.View entering={motion.sectionDelayed(320)} style={{ marginTop: SECTION_GAP }}>
             <SectionHeader title="Configuración" />
             <Card variant="elevated" padded={false} radius="lg">
               <SettingRow
@@ -354,10 +353,7 @@ export default function CardScreen() {
           </Animated.View>
 
           {/* Transactions */}
-          <Animated.View
-            entering={FadeInDown.duration(400).delay(380)}
-            style={{ marginTop: SECTION_GAP }}
-          >
+          <Animated.View entering={motion.sectionDelayed(380)} style={{ marginTop: SECTION_GAP }}>
             <SectionHeader
               title="Movimientos con tarjeta"
               {...(transactions.length > 0

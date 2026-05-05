@@ -1,9 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Avatar, Card, Divider, Screen, SectionHeader, Text, haptics, useTheme } from "@moneto/ui";
+import {
+  Avatar,
+  Card,
+  Divider,
+  Screen,
+  SectionHeader,
+  Text,
+  haptics,
+  useEntrances,
+  useTheme,
+} from "@moneto/ui";
 import { useRouter, type Href } from "expo-router";
 import { useCallback } from "react";
 import { Alert, Pressable, RefreshControl, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 
 import { getCountryInfo } from "@/lib/countries";
 import { capture, Events, getPostHog } from "@/lib/observability";
@@ -69,6 +79,7 @@ export default function ProfileScreen() {
   const dashboard = useDashboardData();
   const unreadCount = useUnreadNotificationCount();
   const { logout, isLoggingOut } = useLogout();
+  const motion = useEntrances();
 
   const country = getCountryInfo(profile.countryCode);
   const handle = profile.handle ?? user.handle;
@@ -302,7 +313,7 @@ export default function ProfileScreen() {
     >
       {/* Hero */}
       <Animated.View
-        entering={FadeInDown.duration(400)}
+        entering={motion.hero}
         style={{
           alignItems: "center",
           paddingTop: 16,
@@ -324,7 +335,7 @@ export default function ProfileScreen() {
       {sections.map((section, si) => (
         <Animated.View
           key={section.key}
-          entering={FadeInDown.duration(400).delay(80 + si * 60)}
+          entering={motion.section(si)}
           style={{ marginTop: SECTION_GAP }}
         >
           <SectionHeader title={section.header} />
