@@ -14,6 +14,7 @@ import { authMiddleware } from "./middleware/auth";
 import { corsMiddleware } from "./middleware/cors";
 import { formatError, requestIdMiddleware } from "./middleware/error-handler";
 import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
+import earlyAccessRoutes from "./routes/early-access";
 import meRoutes from "./routes/me";
 import pricesRoutes from "./routes/prices";
 
@@ -203,6 +204,10 @@ app.route("/api/me", meRoutes);
 // `/api/prices/*` — Pyth Hermes prices (Sprint 3.03). Cache 5s + stale
 // fallback. Hereda authMiddleware + rate limit per-user.
 app.route("/api/prices", pricesRoutes);
+
+// `/api/early-access/*` — waitlist para features no live todavía
+// (bridges Sprint 3.08). Idempotent upsert, marketing follow-up.
+app.route("/api/early-access", earlyAccessRoutes);
 
 // ─── Fallback handlers ─────────────────────────────────────────────────────
 

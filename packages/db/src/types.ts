@@ -173,6 +173,25 @@ type KycAuditLogInsert = {
   raw_event: Json;
 };
 
+type EarlyAccessRequestRow = {
+  user_id: string;
+  /** Slug `namespace:variant` (e.g., `bridge:btc`, `bridge:eth`). */
+  feature: string;
+  metadata: Json;
+  first_requested_at: Timestamptz;
+  last_requested_at: Timestamptz;
+};
+
+type EarlyAccessRequestInsert = {
+  user_id: string;
+  feature: string;
+  metadata?: Json;
+};
+
+type EarlyAccessRequestUpdate = {
+  metadata?: Json;
+};
+
 // ─── Database type (Supabase-compatible) ──────────────────────────────────
 
 export interface Database {
@@ -236,6 +255,19 @@ export interface Database {
           },
         ];
       };
+      early_access_requests: {
+        Row: EarlyAccessRequestRow;
+        Insert: EarlyAccessRequestInsert;
+        Update: EarlyAccessRequestUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "early_access_requests_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -260,3 +292,4 @@ export type UserPreferences = Database["public"]["Tables"]["user_preferences"]["
 export type GuardianNotification = Database["public"]["Tables"]["guardian_notifications"]["Row"];
 export type ViewingKey = Database["public"]["Tables"]["viewing_keys"]["Row"];
 export type KycAuditLog = Database["public"]["Tables"]["kyc_audit_log"]["Row"];
+export type EarlyAccessRequest = Database["public"]["Tables"]["early_access_requests"]["Row"];

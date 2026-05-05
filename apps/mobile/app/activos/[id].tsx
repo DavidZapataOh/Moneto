@@ -1,10 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
-import { formatBalance, getAsset, isAssetId, rawToDisplay, type AssetId } from "@moneto/types";
+import {
+  formatBalance,
+  getAsset,
+  getAssetBridge,
+  isAssetId,
+  rawToDisplay,
+  type AssetId,
+  type BridgeInfo,
+} from "@moneto/types";
 import { Card, Divider, Screen, SectionHeader, Text, haptics, useTheme } from "@moneto/ui";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 
 import { capture, Events, getPostHog } from "@/lib/observability";
 import { AssetIcon } from "@components/features/AssetIcon";
@@ -14,6 +22,11 @@ import { RangeSelector } from "@components/features/RangeSelector";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
 import { useAsset } from "@hooks/useAsset";
+import {
+  useHasRequestedEarlyAccess,
+  useRequestEarlyAccess,
+  type EarlyAccessFeature,
+} from "@hooks/useEarlyAccess";
 import { usePriceHistory, type PriceHistoryRange } from "@hooks/usePriceHistory";
 import { useAppStore } from "@stores/useAppStore";
 
@@ -129,6 +142,13 @@ function Body({ id, balanceHidden }: { id: AssetId; balanceHidden: boolean }) {
   const change24h = asset?.change24h;
   const apy = asset?.apy ?? meta.defaultApy;
 
+  // Sprint 3.08: bridge stub — para BTC/ETH mostramos un banner "Coming
+  // soon" con CTA al waitlist. Si el user ya tiene balance (bridged
+  // externally) el banner queda secundario debajo del chart; sino
+  // reemplaza el chart por la empty-state version completa.
+  const bridge = getAssetBridge(id);
+  const hasOnChainBalance = !!asset && asset.balance > 0n;
+
   return (
     <View>
       <BalanceHeroCard
@@ -141,16 +161,29 @@ function Body({ id, balanceHidden }: { id: AssetId; balanceHidden: boolean }) {
         {...(apy !== undefined ? { apy } : {})}
       />
 
-      {/* Chart por categoría */}
-      {meta.category === "volatile" ? (
-        <ChartCard
-          range={range}
-          onRangeChange={handleRangeChange}
-          history={history.data}
-          isPending={history.isPending}
-        />
-      ) : meta.apySource ? (
-        <YieldPlaceholderCard apyDecimal={apy ?? 0} />
+      {/* Bridge stub (Sprint 3.08): banner above chart when user has no
+          on-chain balance — replaces chart with full empty-state CTA. */}
+      {bridge && !hasOnChainBalance ? (
+        <BridgePlaceholder assetId={id} assetName={meta.name} bridge={bridge} variant="full" />
+      ) : null}
+
+      {/* Chart por categoría — solo cuando no estamos full-empty del bridge stub. */}
+      {!(bridge && !hasOnChainBalance) ? (
+        meta.category === "volatile" ? (
+          <ChartCard
+            range={range}
+            onRangeChange={handleRangeChange}
+            history={history.data}
+            isPending={history.isPending}
+          />
+        ) : meta.apySource ? (
+          <YieldPlaceholderCard apyDecimal={apy ?? 0} />
+        ) : null
+      ) : null}
+
+      {/* Bridge mini-banner cuando el user SI tiene balance externo. */}
+      {bridge && hasOnChainBalance ? (
+        <BridgePlaceholder assetId={id} assetName={meta.name} bridge={bridge} variant="compact" />
       ) : null}
 
       {/* Actions */}
@@ -415,6 +448,212 @@ function ActionButton({
       </Text>
     </Pressable>
   );
+}
+
+// ─── Bridge placeholder (Sprint 3.08 stub) ───────────────────────────
+
+interface BridgePlaceholderProps {
+  assetId: AssetId;
+  assetName: string;
+  bridge: BridgeInfo;
+  /**
+   * `full` — empty-state grande que reemplaza el chart cuando el user
+   * no tiene balance todavía. `compact` — banner una línea cuando el
+   * user ya bridged externally y mostramos el chart.
+   */
+  variant: "full" | "compact";
+}
+
+function BridgePlaceholder({ assetId, assetName, bridge, variant }: BridgePlaceholderProps) {
+  const { colors } = useTheme();
+  const feature = `bridge:${assetId}` as EarlyAccessFeature;
+  const alreadyRequested = useHasRequestedEarlyAccess(feature);
+  const requestAccess = useRequestEarlyAccess();
+
+  // Track impression — funnel input para entender cuántos users ven
+  // este placeholder. Una vez por mount.
+  useFireOnce(() => {
+    const ph = getPostHog();
+    if (ph) {
+      capture(ph, Events.bridge_placeholder_shown, {
+        asset: assetId as "btc" | "eth",
+        has_external_balance: variant === "compact",
+      });
+    }
+  });
+
+  const handlePress = useCallback(() => {
+    if (alreadyRequested || requestAccess.isPending) return;
+    haptics.medium();
+    requestAccess.mutate(
+      { feature, provider: bridge.provider },
+      {
+        onSuccess: () => {
+          haptics.success();
+          Alert.alert(
+            "Estás en la lista",
+            `Te avisamos cuando puedas mover ${assetName} a Moneto.`,
+            [{ text: "Listo" }],
+          );
+        },
+        onError: () => {
+          haptics.error();
+          Alert.alert(
+            "No pudimos registrar tu solicitud",
+            "Revisá tu conexión y volvé a intentar.",
+            [{ text: "Entendido" }],
+          );
+        },
+      },
+    );
+    const ph = getPostHog();
+    if (ph) {
+      capture(ph, Events.bridge_early_access_requested, {
+        asset: assetId as "btc" | "eth",
+        provider:
+          bridge.provider === "zeus" || bridge.provider === "wormhole" ? bridge.provider : "other",
+      });
+    }
+  }, [alreadyRequested, requestAccess, feature, bridge.provider, assetId, assetName]);
+
+  if (variant === "compact") {
+    return (
+      <Card variant="outlined" padded radius="lg" style={{ marginTop: SECTION_GAP }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: `${colors.brand.primary}1F`,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="git-branch-outline" size={16} color={colors.brand.primary} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text variant="bodyMedium" numberOfLines={1}>
+              Bridge in-app en camino
+            </Text>
+            <Text variant="bodySmall" tone="tertiary" numberOfLines={2}>
+              {bridgeProviderLabel(bridge)} integration próximamente. Solicitá acceso early.
+            </Text>
+          </View>
+          <Pressable
+            onPress={handlePress}
+            disabled={alreadyRequested || requestAccess.isPending}
+            accessibilityRole="button"
+            accessibilityLabel={
+              alreadyRequested ? "Ya estás en la lista de acceso early" : "Solicitar acceso early"
+            }
+            accessibilityState={{ disabled: alreadyRequested }}
+            style={({ pressed }) => ({
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 999,
+              backgroundColor: alreadyRequested ? colors.bg.overlay : colors.brand.primary,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text
+              variant="bodySmall"
+              style={{
+                color: alreadyRequested ? colors.text.tertiary : colors.text.inverse,
+                fontFamily: fonts.sansMedium,
+              }}
+            >
+              {alreadyRequested ? "Listo" : requestAccess.isPending ? "..." : "Sumarme"}
+            </Text>
+          </Pressable>
+        </View>
+      </Card>
+    );
+  }
+
+  // Full variant — replaces chart when no balance.
+  return (
+    <Card variant="elevated" padded radius="lg" style={{ marginTop: SECTION_GAP }}>
+      <View style={{ alignItems: "center", gap: 16, paddingVertical: 16 }}>
+        <View
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: `${colors.brand.primary}1F`,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="git-branch-outline" size={28} color={colors.brand.primary} />
+        </View>
+        <View style={{ alignItems: "center", gap: 6, paddingHorizontal: 8 }}>
+          <Text variant="h3" style={{ textAlign: "center" }}>
+            {assetName} en Moneto · próximamente
+          </Text>
+          <Text
+            variant="bodySmall"
+            tone="secondary"
+            style={{ textAlign: "center", lineHeight: 20, maxWidth: 320 }}
+          >
+            Estamos integrando {bridgeProviderLabel(bridge)} para que puedas tener {assetName}{" "}
+            shielded en tu cuenta sin salir de Moneto. Sumate al waitlist y te avisamos primero
+            cuando lance.
+          </Text>
+        </View>
+        <Pressable
+          onPress={handlePress}
+          disabled={alreadyRequested || requestAccess.isPending}
+          accessibilityRole="button"
+          accessibilityLabel={
+            alreadyRequested ? "Ya estás en la lista de acceso early" : "Solicitar acceso early"
+          }
+          accessibilityState={{ disabled: alreadyRequested }}
+          style={({ pressed }) => ({
+            paddingHorizontal: 22,
+            paddingVertical: 14,
+            borderRadius: 999,
+            backgroundColor: alreadyRequested ? colors.bg.overlay : colors.brand.primary,
+            opacity: pressed ? 0.7 : 1,
+            minWidth: 220,
+            alignItems: "center",
+          })}
+        >
+          <Text
+            variant="bodyMedium"
+            style={{
+              color: alreadyRequested ? colors.text.tertiary : colors.text.inverse,
+              fontFamily: fonts.sansMedium,
+            }}
+          >
+            {alreadyRequested
+              ? "Estás en la lista ✓"
+              : requestAccess.isPending
+                ? "Registrando…"
+                : "Solicitar acceso early"}
+          </Text>
+        </Pressable>
+        <Text variant="bodySmall" tone="tertiary" style={{ textAlign: "center", maxWidth: 280 }}>
+          Sin compromisos. Datos solo para avisarte del lanzamiento.
+        </Text>
+      </View>
+    </Card>
+  );
+}
+
+function bridgeProviderLabel(bridge: BridgeInfo): string {
+  switch (bridge.provider) {
+    case "zeus":
+      return "Zeus Network";
+    case "wormhole":
+      return "Wormhole";
+    case "celo-portal":
+      return "Celo Portal";
+    case "tron-bridge":
+      return "Tron Bridge";
+    default:
+      return "el bridge";
+  }
 }
 
 // ─── Invalid asset fallback ──────────────────────────────────────────

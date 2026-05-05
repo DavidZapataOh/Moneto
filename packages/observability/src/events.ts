@@ -75,6 +75,12 @@ export const Events = {
   /** Screenshot detectado mientras PAN visible — auto-hide + alert. Privacy. */
   card_pan_screenshot_detected: "card_pan_screenshot_detected",
 
+  // ── Cross-chain bridges (Sprint 3.08 stub) ──────────────────────────
+  /** User tap "Solicitar acceso early" en el banner de bridge BTC/ETH. */
+  bridge_early_access_requested: "bridge_early_access_requested",
+  /** Banner "Coming soon" de bridge mostrado en asset detail. Funnel input. */
+  bridge_placeholder_shown: "bridge_placeholder_shown",
+
   // ── KYC + compliance ─────────────────────────────────────────────────
   kyc_started: "kyc_started",
   kyc_submitted: "kyc_submitted",
@@ -201,6 +207,14 @@ export interface EventProps {
     value: boolean;
   };
   [Events.card_pan_screenshot_detected]: Record<string, never>;
+  [Events.bridge_early_access_requested]: {
+    asset: "btc" | "eth";
+    provider: "zeus" | "wormhole" | "other";
+  };
+  [Events.bridge_placeholder_shown]: {
+    asset: "btc" | "eth";
+    has_external_balance: boolean;
+  };
   [Events.kyc_started]: { level: 1 | 2 | 3 };
   [Events.kyc_completed]: { level: 1 | 2 | 3; duration_minutes: number };
   [Events.kyc_rejected]: { level: 1 | 2 | 3; reason: string };

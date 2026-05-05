@@ -154,3 +154,61 @@ export function getAssetIdByMint(mint: string): AssetId | null {
 export function isAssetId(value: unknown): value is AssetId {
   return typeof value === "string" && value in ASSETS_REGISTRY;
 }
+
+/**
+ * Provider canónico de bridge cuando el asset requiere uno para
+ * adquirirse. Sprint 3.08 stub — estos providers tienen integración
+ * documentada en `docs/roadmap/cross-chain.md` pero no live todavía.
+ */
+export type BridgeProvider = "zeus" | "wormhole" | "celo-portal" | "tron-bridge" | "other";
+
+export interface BridgeInfo {
+  /** Provider integrado (post-MVP). */
+  provider: BridgeProvider;
+  /** Slug exacto del `bridgeFrom` en el registry — útil para logs. */
+  source: string;
+  /** Sigue live el flow in-app? Sprint 3.08 = false para todos. */
+  available: boolean;
+}
+
+/**
+ * Si el asset requiere un bridge externo para adquirirse on-chain,
+ * retorna info del provider planeado. Sirve a la UI para decidir si
+ * mostrar el banner "Coming soon · Solicitar acceso early" en el detail
+ * screen.
+ *
+ * Determinación: el primary mint del asset tiene `bridgeFrom` set.
+ * Stables locales (COPm, MXNB, BRZ, ARST) también lo tienen, pero su
+ * UX no es bridge cross-chain visible al user — son stables locales que
+ * el user ve nativos. Las excluimos del banner heuristic vía la lista
+ * `BRIDGE_VISIBLE_ASSETS` abajo. Sprint 3.08 cubre solo BTC + ETH.
+ *
+ * @example
+ *   getAssetBridge("btc")  // → { provider: "zeus", source: "bitcoin-zeus", available: false }
+ *   getAssetBridge("usd")  // → null (no bridge needed)
+ *   getAssetBridge("cop")  // → null (visible como stable local, no bridge UX)
+ */
+export function getAssetBridge(id: AssetId): BridgeInfo | null {
+  if (!BRIDGE_VISIBLE_ASSETS.has(id)) return null;
+  const asset = getAsset(id);
+  const primary = asset.underlyingMints.find((m) => m.isPrimary) ?? asset.underlyingMints[0];
+  const source = primary?.bridgeFrom;
+  if (!source) return null;
+  const provider = bridgeProviderFromSource(source);
+  return { provider, source, available: false };
+}
+
+/**
+ * Whitelist de assets para los que la UI muestra el "bridge coming soon"
+ * banner. Sprint 3.08 = solo BTC + ETH. Stables locales tienen su propio
+ * UX path (transacciones internas, sin banner cross-chain).
+ */
+const BRIDGE_VISIBLE_ASSETS = new Set<AssetId>(["btc", "eth"]);
+
+function bridgeProviderFromSource(source: string): BridgeProvider {
+  if (source.includes("zeus")) return "zeus";
+  if (source.includes("wormhole")) return "wormhole";
+  if (source.includes("celo")) return "celo-portal";
+  if (source.includes("tron")) return "tron-bridge";
+  return "other";
+}

@@ -35,6 +35,8 @@ export const queryKeys = {
   preferences: () => ["preferences"] as const,
   /** Asset routing prefs (priority order, hidden assets, default send). */
   assetPreferences: () => ["asset-preferences"] as const,
+  /** Early access waitlist requests (Sprint 3.08 bridges). */
+  earlyAccess: () => ["early-access"] as const,
 
   // ── Money ────────────────────────────────────────────────────────────
   /** Balance agregado USD + APY. */
