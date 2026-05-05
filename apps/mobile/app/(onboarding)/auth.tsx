@@ -1,11 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, Text, Button, Logo, Divider, useTheme, haptics } from "@moneto/ui";
+import { createLogger } from "@moneto/utils";
+import { useEmbeddedSolanaWallet, useLoginWithOAuth, usePrivy } from "@privy-io/expo";
+import { useLoginWithPasskey } from "@privy-io/expo/passkey";
 import { LinearGradient } from "expo-linear-gradient";
-import * as LocalAuthentication from "expo-local-authentication";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { View, Pressable, StyleSheet, Dimensions } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, View, Pressable, StyleSheet, Dimensions } from "react-native";
 
+import { isBiometryAvailable, reportAuthError, waitForSolanaWallet } from "@/lib/auth";
 import { useAppStore } from "@stores/useAppStore";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -13,6 +16,8 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 // Grid config
 const GRID_CELL = 48; // 8pt grid múltiplo — 48pt cells se sienten "premium"
 const GRID_AREA_H = SCREEN_H * 0.62; // cubre el top-portion, fade antes de los botones
+
+const log = createLogger("auth.screen");
 
 type AuthMode = "signup" | "login";
 type AuthMethod = "apple" | "google" | "passkey";
@@ -74,37 +79,86 @@ export default function AuthScreen() {
   const mode: AuthMode = params.mode === "login" ? "login" : "signup";
   const copy = COPY[mode];
   const [loading, setLoading] = useState<AuthMethod | null>(null);
-  const login = useAppStore((s) => s.login);
+
+  const { user, isReady } = usePrivy();
+  const wallets = useEmbeddedSolanaWallet();
   const completeOnboarding = useAppStore((s) => s.completeOnboarding);
 
-  const handleAuth = async (method: AuthMethod) => {
-    setLoading(method);
-    haptics.medium();
-
-    // Simulación: en producción aquí va Privy embedded wallet flow
-    await new Promise((r) => setTimeout(r, 900));
-
-    if (method === "passkey") {
-      try {
-        const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: "Autenticate para entrar a Moneto",
-          fallbackLabel: "Usar código",
-        });
-        if (!result.success) {
-          setLoading(null);
-          return;
-        }
-      } catch {
-        // Continúa simulado en web
-      }
-    }
-
+  const handleSuccess = useCallback(async () => {
     haptics.success();
+
+    // UI optimista: navegamos inmediato. El polling del wallet corre en
+    // background — si falla, mostramos alert pero el user ya ve la
+    // pantalla nueva (Privy reintenta wallet creation automáticamente).
     completeOnboarding();
-    login();
-    setLoading(null);
     router.replace("/(tabs)");
-  };
+
+    const address = await waitForSolanaWallet(() => extractFirstSolanaAddress(wallets), {
+      timeoutMs: 10_000,
+    });
+    if (!address) {
+      log.warn("solana wallet not ready after timeout — user can retry from /(tabs)");
+      // No bloqueamos UI — el `usePrivyAuthSync` seguirá poll-eando y
+      // cuando el wallet esté ready, el authState pasa a `authenticated`.
+    }
+  }, [completeOnboarding, router, wallets]);
+
+  const handleError = useCallback(
+    (error: unknown, method: AuthMethod) => {
+      const mapped = reportAuthError(error, method, mode);
+      setLoading(null);
+
+      if (mapped.errorCode === "user_cancelled") {
+        // No alert — el user dio "cancel", no es error.
+        return;
+      }
+
+      haptics.error();
+      Alert.alert("Error de autenticación", mapped.message, [{ text: "OK" }]);
+    },
+    [mode],
+  );
+
+  const { loginWithPasskey } = useLoginWithPasskey({
+    onSuccess: handleSuccess,
+    onError: (e) => handleError(e, "passkey"),
+  });
+
+  const { login: loginWithOAuth } = useLoginWithOAuth({
+    onSuccess: handleSuccess,
+    onError: (e: Error) => handleError(e, loading ?? "apple"),
+  });
+
+  // Auto-redirect si Privy ya restauró sesión activa al cold start.
+  useEffect(() => {
+    if (isReady && user) {
+      router.replace("/(tabs)");
+    }
+  }, [isReady, user, router]);
+
+  const handleAuth = useCallback(
+    async (method: AuthMethod) => {
+      if (loading !== null) return;
+      setLoading(method);
+      haptics.medium();
+
+      try {
+        if (method === "passkey") {
+          const ok = await isBiometryAvailable();
+          if (!ok) {
+            handleError(new Error("Biometric not available on this device"), "passkey");
+            return;
+          }
+          await loginWithPasskey({ relyingParty: "moneto.xyz" });
+        } else {
+          await loginWithOAuth({ provider: method });
+        }
+      } catch (err) {
+        handleError(err, method);
+      }
+    },
+    [loading, loginWithPasskey, loginWithOAuth, handleError],
+  );
 
   // Líneas del grid tintadas con brand primary — le da calor y marca identidad,
   // no es gris neutro. Opacidad baja para que se lea como textura, no como UI.
@@ -113,6 +167,11 @@ export default function AuthScreen() {
   // Color del bg (ink-900 dark / cream-50 light) en rgba para los fades.
   const bgOpaque = isDark ? "rgba(20, 16, 11, 1)" : "rgba(251, 247, 239, 1)";
   const bgClear = isDark ? "rgba(20, 16, 11, 0)" : "rgba(251, 247, 239, 0)";
+
+  const passkeyLabel = useMemo(() => {
+    if (loading === "passkey") return "Verificando…";
+    return "Continuar con Face ID";
+  }, [loading]);
 
   return (
     <Screen padded={false}>
@@ -197,14 +256,15 @@ export default function AuthScreen() {
           </View>
         </View>
 
-        {/* Bloque de botones — INTACTO */}
+        {/* Bloque de botones — INTACTO visualmente, handlers ahora usan Privy real */}
         <View style={{ gap: 12 }}>
           <Button
-            label={loading === "passkey" ? "Verificando…" : "Continuar con Face ID"}
+            label={passkeyLabel}
             variant="primary"
             size="lg"
             fullWidth
             loading={loading === "passkey"}
+            disabled={loading !== null && loading !== "passkey"}
             onPress={() => handleAuth("passkey")}
             leftIcon={<Ionicons name="shield-checkmark" size={18} color={colors.text.inverse} />}
           />
@@ -230,6 +290,7 @@ export default function AuthScreen() {
             size="lg"
             fullWidth
             loading={loading === "apple"}
+            disabled={loading !== null && loading !== "apple"}
             onPress={() => handleAuth("apple")}
             leftIcon={<Ionicons name="logo-apple" size={20} color={colors.text.primary} />}
           />
@@ -239,6 +300,7 @@ export default function AuthScreen() {
             size="lg"
             fullWidth
             loading={loading === "google"}
+            disabled={loading !== null && loading !== "google"}
             onPress={() => handleAuth("google")}
             leftIcon={<Ionicons name="logo-google" size={20} color={colors.text.primary} />}
           />
@@ -262,4 +324,15 @@ export default function AuthScreen() {
       </View>
     </Screen>
   );
+}
+
+/** Helper local — duck-typing del shape variable de useEmbeddedSolanaWallet. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- shape varía por estado
+function extractFirstSolanaAddress(wallets: any): string | null {
+  if (!wallets || wallets.status !== "connected") return null;
+  const list = wallets.wallets;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const first = list[0];
+  if (!first || typeof first.address !== "string") return null;
+  return first.address;
 }

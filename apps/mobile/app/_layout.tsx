@@ -6,6 +6,8 @@ import {
 } from "@expo-google-fonts/jetbrains-mono";
 import { palette, type ThemeMode } from "@moneto/theme";
 import { ThemeProvider, useTheme } from "@moneto/ui";
+import { PrivyProvider } from "@privy-io/expo";
+import { PrivyElements } from "@privy-io/expo/ui";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -15,6 +17,7 @@ import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
 import { bootObservability } from "@/lib/observability";
 import { useThemeStore } from "@stores/useThemeStore";
 
@@ -26,6 +29,9 @@ import "../global.css";
 bootObservability();
 
 SplashScreen.preventAutoHideAsync();
+
+const PRIVY_APP_ID = process.env["EXPO_PUBLIC_PRIVY_APP_ID"] ?? "";
+const PRIVY_CLIENT_ID = process.env["EXPO_PUBLIC_PRIVY_CLIENT_ID"];
 
 export default function RootLayout() {
   const scheme = useColorScheme();
@@ -53,15 +59,32 @@ export default function RootLayout() {
 
   if (!loaded) return null;
 
+  // PrivyProvider DEBE wrappear ThemeProvider — usePrivy hooks se llaman
+  // desde dentro de Shell, así que necesitan el contexto Privy disponible.
   return (
-    <ThemeProvider mode={mode}>
-      <Shell />
-    </ThemeProvider>
+    <PrivyProvider
+      appId={PRIVY_APP_ID}
+      {...(PRIVY_CLIENT_ID ? { clientId: PRIVY_CLIENT_ID } : {})}
+      config={{
+        embedded: {
+          solana: {
+            createOnLogin: "users-without-wallets",
+          },
+        },
+      }}
+    >
+      <ThemeProvider mode={mode}>
+        <Shell />
+      </ThemeProvider>
+    </PrivyProvider>
   );
 }
 
 function Shell() {
   const { isDark } = useTheme();
+
+  // Sync Privy state → Zustand authState. Single writer, idempotent.
+  usePrivyAuthSync();
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(isDark ? palette.ink[900] : palette.cream[50]);
@@ -107,6 +130,8 @@ function Shell() {
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
         </Stack>
+        {/* PrivyElements monta UI overlays para flows OAuth (Apple/Google sheets). */}
+        <PrivyElements />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

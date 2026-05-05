@@ -73,6 +73,9 @@
         "expo-build-properties",
         {
           "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
             "usesCleartextTraffic": false,
             "networkSecurityConfig": {
               "cleartextTrafficPermitted": false,
@@ -89,7 +92,8 @@
             "deploymentTarget": "15.1"
           }
         }
-      ]
+      ],
+      "@privy-io/expo-native-extensions"
     ],
     "experiments": {
       "typedRoutes": true

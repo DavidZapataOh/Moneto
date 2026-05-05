@@ -1,0 +1,49 @@
+{
+  "name": "@moneto/db",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "files": [
+    "src",
+    "supabase"
+  ],
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff",
+    "db:gen-types": "supabase gen types typescript --local > src/types.generated.ts",
+    "db:lint": "supabase db lint",
+    "fn:serve": "supabase functions serve --env-file ./supabase/.env.local",
+    "fn:deploy": "supabase functions deploy"
+  },
+  "dependencies": {
+    "@moneto/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "peerDependenciesMeta": {
+    "@supabase/supabase-js": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@moneto/eslint-config": "workspace:*",
+    "@moneto/tsconfig": "workspace:*",
+    "@supabase/supabase-js": "^2.45.0",
+    "eslint": "^8.57.1",
+    "typescript": "~5.9.2"
+  }
+}
