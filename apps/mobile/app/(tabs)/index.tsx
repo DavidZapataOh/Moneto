@@ -13,6 +13,7 @@ import { EmptyTransactions } from "@components/features/EmptyTransactions";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { YieldChart } from "@components/features/YieldChart";
+import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
 import { Skeleton, BalanceSkeleton, TxRowSkeleton } from "@components/Skeleton";
 import { mockYieldHistory } from "@data/mock";
 import { useDashboardData } from "@hooks/useDashboardData";
@@ -111,19 +112,23 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Balance hero — única emphasis de la pantalla */}
-      <Animated.View entering={FadeInDown.duration(400).delay(40)}>
-        {isLoading ? (
-          <BalanceSkeleton />
-        ) : (
-          <BalanceHero
-            balance={dashboard.balance.totalUsd}
-            yieldApy={dashboard.balance.yieldApy}
-            hidden={balanceHidden}
-            onToggleVisibility={toggleBalanceVisibility}
-          />
-        )}
-      </Animated.View>
+      {/* Balance hero — única emphasis de la pantalla. Wrapped en boundary
+          porque un fallo en BalanceHero (Reanimated worklet, format crash)
+          rompería la pantalla entera y esta es la zona más crítica. */}
+      <ScreenErrorBoundary feature="saldo.balance-hero">
+        <Animated.View entering={FadeInDown.duration(400).delay(40)}>
+          {isLoading ? (
+            <BalanceSkeleton />
+          ) : (
+            <BalanceHero
+              balance={dashboard.balance.totalUsd}
+              yieldApy={dashboard.balance.yieldApy}
+              hidden={balanceHidden}
+              onToggleVisibility={toggleBalanceVisibility}
+            />
+          )}
+        </Animated.View>
+      </ScreenErrorBoundary>
 
       {/* Quick actions */}
       <Animated.View
@@ -203,52 +208,56 @@ export default function HomeScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* Transactions — rows flat dentro de card padded=false */}
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(280)}
-        style={{ marginTop: SECTION_GAP }}
-      >
-        <SectionHeader
-          title="Movimientos"
-          {...(recentTxs.length > 0
-            ? {
-                action: {
-                  label: "Ver todos",
-                  onPress: () => haptics.tap(),
-                },
-              }
-            : {})}
-        />
-        <Card variant="elevated" padded={false} radius="lg">
-          {isLoading ? (
-            <>
-              {[0, 1, 2, 3].map((i, _arr, arr = [0, 1, 2, 3]) => (
-                <View key={i}>
-                  <TxRowSkeleton />
-                  {i < arr.length - 1 ? (
+      {/* Transactions — boundary aísla a la sección. Si la lista crash-ea
+          (e.g., date format de tx malformada), el resto de Saldo sigue
+          funcional con su retry button propio. */}
+      <ScreenErrorBoundary feature="saldo.transactions">
+        <Animated.View
+          entering={FadeInDown.duration(400).delay(280)}
+          style={{ marginTop: SECTION_GAP }}
+        >
+          <SectionHeader
+            title="Movimientos"
+            {...(recentTxs.length > 0
+              ? {
+                  action: {
+                    label: "Ver todos",
+                    onPress: () => haptics.tap(),
+                  },
+                }
+              : {})}
+          />
+          <Card variant="elevated" padded={false} radius="lg">
+            {isLoading ? (
+              <>
+                {[0, 1, 2, 3].map((i, _arr, arr = [0, 1, 2, 3]) => (
+                  <View key={i}>
+                    <TxRowSkeleton />
+                    {i < arr.length - 1 ? (
+                      <View style={{ paddingHorizontal: 16 }}>
+                        <Divider />
+                      </View>
+                    ) : null}
+                  </View>
+                ))}
+              </>
+            ) : recentTxs.length === 0 ? (
+              <EmptyTransactions />
+            ) : (
+              recentTxs.map((tx, i) => (
+                <View key={tx.id}>
+                  <TransactionRow tx={tx} onPress={() => haptics.tap()} />
+                  {i < recentTxs.length - 1 && (
                     <View style={{ paddingHorizontal: 16 }}>
                       <Divider />
                     </View>
-                  ) : null}
+                  )}
                 </View>
-              ))}
-            </>
-          ) : recentTxs.length === 0 ? (
-            <EmptyTransactions />
-          ) : (
-            recentTxs.map((tx, i) => (
-              <View key={tx.id}>
-                <TransactionRow tx={tx} onPress={() => haptics.tap()} />
-                {i < recentTxs.length - 1 && (
-                  <View style={{ paddingHorizontal: 16 }}>
-                    <Divider />
-                  </View>
-                )}
-              </View>
-            ))
-          )}
-        </Card>
-      </Animated.View>
+              ))
+            )}
+          </Card>
+        </Animated.View>
+      </ScreenErrorBoundary>
 
       <View style={{ height: bottomSpace }} />
     </Screen>

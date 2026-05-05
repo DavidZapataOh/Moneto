@@ -19,6 +19,7 @@ import { capture, Events, getPostHog } from "@/lib/observability";
 import { AssetDonut } from "@components/features/AssetDonut";
 import { AssetRow } from "@components/features/AssetRow";
 import { EmptyAssets } from "@components/features/EmptyAssets";
+import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
 import { useAssetsData } from "@hooks/useAssetsData";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { useAppStore } from "@stores/useAppStore";
@@ -298,20 +299,25 @@ export default function ActivosScreen() {
             </Animated.View>
           ) : null}
 
-          {/* Vault allocation — donut */}
-          <Animated.View
-            entering={FadeInDown.duration(400).delay(200)}
-            style={{ marginTop: SECTION_GAP }}
-          >
-            <SectionHeader title="Dónde rinde tu dinero" />
-            <Card variant="elevated" padded radius="lg">
-              <AssetDonut
-                data={data.vaultAllocations}
-                weightedApy={data.weightedApy}
-                hidden={balanceHidden}
-              />
-            </Card>
-          </Animated.View>
+          {/* Vault allocation — donut. Wrapped en boundary porque
+              `react-native-svg` + Reanimated worklets son la zona más
+              frágil de la screen. Un crash en el donut NO debe tirar
+              el resto. */}
+          <ScreenErrorBoundary feature="activos.donut">
+            <Animated.View
+              entering={FadeInDown.duration(400).delay(200)}
+              style={{ marginTop: SECTION_GAP }}
+            >
+              <SectionHeader title="Dónde rinde tu dinero" />
+              <Card variant="elevated" padded radius="lg">
+                <AssetDonut
+                  data={data.vaultAllocations}
+                  weightedApy={data.weightedApy}
+                  hidden={balanceHidden}
+                />
+              </Card>
+            </Animated.View>
+          </ScreenErrorBoundary>
 
           {/* Privacy footer */}
           <Animated.View

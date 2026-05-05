@@ -21,6 +21,7 @@ import { useAutoLogoutOnExpired } from "@/hooks/useAutoLogoutOnExpired";
 import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
 import { useThemePreferenceSync } from "@/hooks/useThemePreferenceSync";
 import { bootObservability } from "@/lib/observability";
+import { OfflineBanner } from "@components/OfflineBanner";
 import { useThemeStore } from "@stores/useThemeStore";
 
 import "../global.css";
@@ -148,6 +149,9 @@ function Shell() {
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
         </Stack>
+        {/* OfflineBanner — slide-down banner cuando perdemos conexión.
+            Mounted top-level para que esté visible en cualquier ruta. */}
+        <OfflineBanner />
         {/* PrivyElements monta UI overlays para flows OAuth (Apple/Google sheets). */}
         <PrivyElements />
       </SafeAreaProvider>

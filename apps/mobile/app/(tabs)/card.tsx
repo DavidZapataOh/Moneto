@@ -19,6 +19,7 @@ import { capture, Events, getPostHog } from "@/lib/observability";
 import { EmptyCardState } from "@components/features/EmptyCardState";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { VirtualCard } from "@components/features/VirtualCard";
+import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
 import { SettingRow } from "@components/SettingRow";
 import { useCardPanReveal } from "@hooks/useCardPanReveal";
 import { useDashboardData } from "@hooks/useDashboardData";
@@ -138,24 +139,30 @@ export default function CardScreen() {
         <EmptyCardState onRequest={handleRequestCard} />
       ) : (
         <>
-          {/* Card visual — único accent peak */}
-          <Animated.View
-            entering={FadeInDown.duration(420)}
-            style={{ alignItems: "center", marginBottom: 20 }}
-          >
-            <VirtualCard
-              last4={card.last4}
-              cardholderName={card.cardholderName}
-              expiryMonth={card.expiryMonth}
-              expiryYear={card.expiryYear}
-              showDetails={showDetails}
-              showFullPan={pan.showFullPan}
-              fullPan={card.fullPan}
-              cvv="•••" /* CVV mock — production viene del API call cifrado */
-              frozen={frozen}
-              onTap={() => setShowDetails((s) => !s)}
-            />
-          </Animated.View>
+          {/* Card visual — único accent peak. Wrapped en boundary porque
+              el flip 3D + LinearGradient + tilt animation lo hace la zona
+              más frágil. Si crash-ea, el resto de la screen (settings,
+              spend tracker) sigue funcional para que el user no pierda
+              acceso a `freeze`. */}
+          <ScreenErrorBoundary feature="card.visual">
+            <Animated.View
+              entering={FadeInDown.duration(420)}
+              style={{ alignItems: "center", marginBottom: 20 }}
+            >
+              <VirtualCard
+                last4={card.last4}
+                cardholderName={card.cardholderName}
+                expiryMonth={card.expiryMonth}
+                expiryYear={card.expiryYear}
+                showDetails={showDetails}
+                showFullPan={pan.showFullPan}
+                fullPan={card.fullPan}
+                cvv="•••" /* CVV mock — production viene del API call cifrado */
+                frozen={frozen}
+                onTap={() => setShowDetails((s) => !s)}
+              />
+            </Animated.View>
+          </ScreenErrorBoundary>
 
           {/* Status row */}
           <Animated.View
