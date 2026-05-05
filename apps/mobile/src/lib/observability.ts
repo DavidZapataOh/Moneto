@@ -29,10 +29,17 @@ function resolveEnv(): Environment {
  * launch. Idempotent — llamadas repetidas son no-op.
  *
  * Cada SDK se inicializa SOLO si su token público está set:
- * - `EXPO_PUBLIC_SENTRY_DSN` → Sentry
- * - `EXPO_PUBLIC_POSTHOG_KEY` → PostHog
+ * - `EXPO_PUBLIC_SENTRY_DSN` → Sentry (sync — necesario para capturar errors tempranos)
+ * - `EXPO_PUBLIC_POSTHOG_KEY` → PostHog (deferred 1000ms — analytics no bloquea TTI)
  *
  * Sin tokens, los SDKs quedan no-op (cero overhead, cero crash).
+ *
+ * **Cold start optimization**: Sentry corre sync (queremos capturar
+ * crashes durante mount). PostHog se difiere 1s post-mount — analytics
+ * no es crítica para el primer frame interactivo y construir el cliente
+ * de PostHog cuesta ~50ms en devices baseline. Eventos disparados antes
+ * del init quedan en queue: el `getPostHog()` retorna `null` y los
+ * call-sites `if (ph) capture(...)` funcionan correcto.
  */
 export function bootObservability(): void {
   if (booted) return;
@@ -42,7 +49,7 @@ export function bootObservability(): void {
 
   setMinLogLevel(env === "production" ? "warn" : "debug");
 
-  // ── Sentry ────────────────────────────────────────────────────────────
+  // ── Sentry — sync, captura errors desde el primer mount ──────────────
   const sentryDsn = process.env["EXPO_PUBLIC_SENTRY_DSN"];
   const release = `moneto-mobile@${Constants.expoConfig?.version ?? "0.0.0"}`;
   const dist = Constants.expoConfig?.runtimeVersion as string | undefined;
@@ -64,19 +71,25 @@ export function bootObservability(): void {
     log.info("sentry initialized", { env, release });
   }
 
-  // ── PostHog ───────────────────────────────────────────────────────────
+  // ── PostHog — deferido 1s post-mount ─────────────────────────────────
   const posthogKey = process.env["EXPO_PUBLIC_POSTHOG_KEY"];
   const posthogHost = process.env["EXPO_PUBLIC_POSTHOG_HOST"] ?? "https://us.posthog.com";
 
   if (posthogKey) {
-    posthog = new PostHog(posthogKey, {
-      host: posthogHost,
-      enableSessionReplay: env === "production",
-      captureAppLifecycleEvents: true,
-      flushInterval: 30,
-      flushAt: 20,
-    });
-    log.info("posthog initialized", { env, host: posthogHost });
+    setTimeout(() => {
+      try {
+        posthog = new PostHog(posthogKey, {
+          host: posthogHost,
+          enableSessionReplay: env === "production",
+          captureAppLifecycleEvents: true,
+          flushInterval: 30,
+          flushAt: 20,
+        });
+        log.info("posthog initialized (deferred)", { env, host: posthogHost });
+      } catch (err) {
+        log.warn("posthog deferred init failed", { err: String(err) });
+      }
+    }, 1000);
   }
 }
 

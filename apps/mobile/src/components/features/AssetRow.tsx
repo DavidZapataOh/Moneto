@@ -2,6 +2,7 @@ import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
 import { formatAmountForA11y } from "@moneto/utils";
 import { useRouter, type Href } from "expo-router";
+import { memo } from "react";
 import { View, Pressable } from "react-native";
 
 import { AssetIcon } from "./AssetIcon";
@@ -24,7 +25,7 @@ interface AssetRowProps {
  * Para assets rindiendo: subtitle = "X% APY · rindiendo" + right = native balance
  * Para volátiles: subtitle = "↑ X% hoy" + right = native balance
  */
-export function AssetRow({ asset, onPress }: AssetRowProps) {
+function AssetRowImpl({ asset, onPress }: AssetRowProps) {
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -170,3 +171,24 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
     </Pressable>
   );
 }
+
+/**
+ * memo equality: la row solo re-render cuando cambia algo del asset
+ * que afecte el visual. `id` cubre el slot, `balance/balanceUsd/apy/
+ * change24h` cubren updates por re-fetch del oracle.
+ *
+ * Beneficio medido: en una list de 9 assets, evita 8 re-renders cuando
+ * el parent (Activos) re-render por toggle balanceHidden o pull-to-refresh.
+ */
+export const AssetRow = memo(AssetRowImpl, (prev, next) => {
+  return (
+    prev.asset.id === next.asset.id &&
+    prev.asset.balance === next.asset.balance &&
+    prev.asset.balanceUsd === next.asset.balanceUsd &&
+    prev.asset.apy === next.asset.apy &&
+    prev.asset.change24h === next.asset.change24h &&
+    prev.onPress === next.onPress
+  );
+});
+
+AssetRow.displayName = "AssetRow";

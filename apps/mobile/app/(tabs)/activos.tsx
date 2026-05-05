@@ -12,7 +12,7 @@ import {
   useTheme,
 } from "@moneto/ui";
 import { useRouter } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Alert, Pressable, RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -55,8 +55,12 @@ export default function ActivosScreen() {
   const data = useAssetsData();
 
   const motion = useEntrances();
-  const earning = data.assets.filter((a) => a.isEarning);
-  const holdings = data.assets.filter((a) => !a.isEarning);
+  // Memoizamos los splits para que las `AssetRow` (memoized) reciban
+  // referencias estables — sin esto, cada render del Activos crearía
+  // arrays nuevos y forzaría re-render de las 9 rows aún si el data
+  // del asset es el mismo.
+  const earning = useMemo(() => data.assets.filter((a) => a.isEarning), [data.assets]);
+  const holdings = useMemo(() => data.assets.filter((a) => !a.isEarning), [data.assets]);
   const isEmpty = data.totalPatrimonioUsd === 0;
   const change24h = data.change24hUsd;
   const changePct = data.change24hPct;

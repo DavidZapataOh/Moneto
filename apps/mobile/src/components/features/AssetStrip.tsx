@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
 import { useRouter, type Href } from "expo-router";
+import { useMemo } from "react";
 import { ScrollView, View, Pressable } from "react-native";
 
 import { AssetIcon } from "./AssetIcon";
@@ -27,15 +28,20 @@ interface AssetStripProps {
 export function AssetStrip({ assets, maxVisible = 4 }: AssetStripProps) {
   const router = useRouter();
 
-  // Ordenar: pinned (USD) primero, resto por balanceUsd desc
-  const sorted = [...assets].sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    return b.balanceUsd - a.balanceUsd;
-  });
-
-  const visible = sorted.slice(0, maxVisible);
-  const hasMore = sorted.length > maxVisible;
+  // Memoizamos sort + slice — recreaba un array nuevo en cada render
+  // del parent (e.g., refresh, tab change). Con memo, identidad
+  // estable mientras `assets` no cambie.
+  const { visible, hasMore } = useMemo(() => {
+    const sorted = [...assets].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return b.balanceUsd - a.balanceUsd;
+    });
+    return {
+      visible: sorted.slice(0, maxVisible),
+      hasMore: sorted.length > maxVisible,
+    };
+  }, [assets, maxVisible]);
 
   const handleAssetPress = (assetId: string) => {
     haptics.tap();

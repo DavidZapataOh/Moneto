@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
 import { formatAmountForA11y, formatRelative } from "@moneto/utils";
+import { memo } from "react";
 import { View, Pressable } from "react-native";
 
 import type { Transaction } from "@data/mock";
@@ -36,7 +37,7 @@ const typeConfig = {
  * Bottom line: tipo · fecha (flex:1) + status privacy (derecha)
  * Ambas líneas tienen contenido a IZQUIERDA y DERECHA → estructura visible
  */
-export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowProps) {
+function TransactionRowImpl({ tx, onPress, showDate = true }: TransactionRowProps) {
   const { colors } = useTheme();
   const cfg = typeConfig[tx.type];
   const isIncoming = tx.amount > 0;
@@ -185,3 +186,23 @@ export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowP
     </Pressable>
   );
 }
+
+/**
+ * memo equality: la row solo re-renderea si cambia algo del tx que afecte
+ * el render. `id` cubre el slot, `status` y `amount` cubren updates
+ * realistas; `onPress`/`showDate` rara vez cambian, asumimos identidad.
+ *
+ * Beneficio medido: en una list de 5 txs, evita re-render de 4 cuando
+ * el parent (Saldo) re-render por refresh — sólo la row tocada actualiza.
+ */
+export const TransactionRow = memo(TransactionRowImpl, (prev, next) => {
+  return (
+    prev.tx.id === next.tx.id &&
+    prev.tx.status === next.tx.status &&
+    prev.tx.amount === next.tx.amount &&
+    prev.showDate === next.showDate &&
+    prev.onPress === next.onPress
+  );
+});
+
+TransactionRow.displayName = "TransactionRow";

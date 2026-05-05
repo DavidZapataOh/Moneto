@@ -12,7 +12,7 @@ import {
   useTheme,
 } from "@moneto/ui";
 import * as Clipboard from "expo-clipboard";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert, Platform, Pressable, RefreshControl, View } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -47,7 +47,14 @@ export default function CardScreen() {
   const card = useAppStore((s) => s.card);
   const setCardFrozen = useAppStore((s) => s.setCardFrozen);
   const setCardSetting = useAppStore((s) => s.setCardSetting);
-  const transactions = useAppStore((s) => s.transactions).filter((t) => t.type === "card");
+  const allTransactions = useAppStore((s) => s.transactions);
+  // Memoize: el filter recreaba un array nuevo en cada render → forzaba
+  // a la `TransactionRow` memo a re-render por identity diff. Con useMemo,
+  // si las txs no cambian, la lista referencia es estable.
+  const transactions = useMemo(
+    () => allTransactions.filter((t) => t.type === "card"),
+    [allTransactions],
+  );
   const [showDetails, setShowDetails] = useState(false);
   const [frozenPending, setFrozenPending] = useState(false);
   const bottomSpace = useTabBarSpace();
