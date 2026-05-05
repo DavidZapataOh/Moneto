@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
+import { useThemePreferenceSync } from "@/hooks/useThemePreferenceSync";
 import { bootObservability } from "@/lib/observability";
 import { useThemeStore } from "@stores/useThemeStore";
 
@@ -85,6 +86,10 @@ function Shell() {
 
   // Sync Privy state → Zustand authState. Single writer, idempotent.
   usePrivyAuthSync();
+
+  // Sync theme preference local ⇄ remote (Supabase user_preferences).
+  // Pull on login (last-write-wins), push debounced en cambios locales.
+  useThemePreferenceSync();
 
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(isDark ? palette.ink[900] : palette.cream[50]);

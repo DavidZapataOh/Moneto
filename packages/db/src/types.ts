@@ -32,7 +32,7 @@ export type GuardianNotificationStatus = "pending" | "acknowledged" | "expired";
 // IDs son `text` (no `uuid`) — Privy DIDs tienen formato `did:privy:xxx`,
 // no son UUIDs válidos. Ver migration 0006_change_id_to_text.sql.
 
-interface ProfileRow {
+type ProfileRow = {
   id: string; // Privy DID — `did:privy:xxx`
   handle: string;
   name: string | null;
@@ -43,9 +43,9 @@ interface ProfileRow {
   kyc_status: KycStatus;
   created_at: Timestamptz;
   updated_at: Timestamptz;
-}
+};
 
-interface ProfileInsert {
+type ProfileInsert = {
   id: string;
   handle: string;
   name?: string | null;
@@ -54,11 +54,11 @@ interface ProfileInsert {
   avatar_url?: string | null;
   kyc_level?: KycLevel;
   kyc_status?: KycStatus;
-}
+};
 
 type ProfileUpdate = Partial<ProfileInsert>;
 
-interface UserPreferencesRow {
+type UserPreferencesRow = {
   user_id: string;
   theme: ThemePreference;
   language: LanguagePreference;
@@ -67,9 +67,9 @@ interface UserPreferencesRow {
   balance_hidden: boolean;
   default_asset: string;
   updated_at: Timestamptz;
-}
+};
 
-interface UserPreferencesInsert {
+type UserPreferencesInsert = {
   user_id: string;
   theme?: ThemePreference;
   language?: LanguagePreference;
@@ -77,11 +77,11 @@ interface UserPreferencesInsert {
   notifications_email?: boolean;
   balance_hidden?: boolean;
   default_asset?: string;
-}
+};
 
 type UserPreferencesUpdate = Partial<UserPreferencesInsert>;
 
-interface GuardianNotificationRow {
+type GuardianNotificationRow = {
   id: string;
   recipient_user_id: string;
   notification_type: GuardianNotificationType;
@@ -89,22 +89,22 @@ interface GuardianNotificationRow {
   status: GuardianNotificationStatus;
   expires_at: Timestamptz;
   created_at: Timestamptz;
-}
+};
 
-interface GuardianNotificationInsert {
+type GuardianNotificationInsert = {
   id?: string;
   recipient_user_id: string;
   notification_type: GuardianNotificationType;
   squads_multisig_pubkey: string;
   status?: GuardianNotificationStatus;
   expires_at: Timestamptz;
-}
+};
 
-interface GuardianNotificationUpdate {
+type GuardianNotificationUpdate = {
   status?: GuardianNotificationStatus;
-}
+};
 
-interface ViewingKeyRow {
+type ViewingKeyRow = {
   id: string;
   user_id: string;
   label_ciphertext: string; // bytea → base64
@@ -112,23 +112,23 @@ interface ViewingKeyRow {
   expires_at: Timestamptz | null;
   revoked_at: Timestamptz | null;
   created_at: Timestamptz;
-}
+};
 
-interface ViewingKeyInsert {
+type ViewingKeyInsert = {
   id?: string;
   user_id: string;
   label_ciphertext: string;
   scope: ViewingKeyScope;
   expires_at?: Timestamptz | null;
   revoked_at?: Timestamptz | null;
-}
+};
 
-interface ViewingKeyUpdate {
+type ViewingKeyUpdate = {
   label_ciphertext?: string;
   scope?: ViewingKeyScope;
   expires_at?: Timestamptz | null;
   revoked_at?: Timestamptz | null;
-}
+};
 
 export type KycEventType =
   | "inquiry.completed"
@@ -137,7 +137,7 @@ export type KycEventType =
   | "report.run-completed"
   | "verification.created";
 
-interface KycAuditLogRow {
+type KycAuditLogRow = {
   id: string;
   user_id: string;
   inquiry_id: string;
@@ -149,9 +149,9 @@ interface KycAuditLogRow {
   new_status: KycStatus;
   raw_event: Json;
   created_at: Timestamptz;
-}
+};
 
-interface KycAuditLogInsert {
+type KycAuditLogInsert = {
   id?: string;
   user_id: string;
   inquiry_id: string;
@@ -162,7 +162,7 @@ interface KycAuditLogInsert {
   new_level: KycLevel;
   new_status: KycStatus;
   raw_event: Json;
-}
+};
 
 // ─── Database type (Supabase-compatible) ──────────────────────────────────
 
@@ -173,26 +173,59 @@ export interface Database {
         Row: ProfileRow;
         Insert: ProfileInsert;
         Update: ProfileUpdate;
+        Relationships: [];
       };
       user_preferences: {
         Row: UserPreferencesRow;
         Insert: UserPreferencesInsert;
         Update: UserPreferencesUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       guardian_notifications: {
         Row: GuardianNotificationRow;
         Insert: GuardianNotificationInsert;
         Update: GuardianNotificationUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "guardian_notifications_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       viewing_keys: {
         Row: ViewingKeyRow;
         Insert: ViewingKeyInsert;
         Update: ViewingKeyUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "viewing_keys_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       kyc_audit_log: {
         Row: KycAuditLogRow;
         Insert: KycAuditLogInsert;
         Update: never; // append-only
+        Relationships: [
+          {
+            foreignKeyName: "kyc_audit_log_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: Record<string, never>;

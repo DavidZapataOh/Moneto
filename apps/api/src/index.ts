@@ -14,6 +14,7 @@ import { authMiddleware } from "./middleware/auth";
 import { corsMiddleware } from "./middleware/cors";
 import { formatError, requestIdMiddleware } from "./middleware/error-handler";
 import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
+import meRoutes from "./routes/me";
 
 interface KVNamespaceBinding {
   get(key: string): Promise<string | null>;
@@ -28,6 +29,9 @@ type Bindings = {
   AXIOM_DATASET?: string;
   /** Privy app ID (público — usado para validar `aud` claim de los JWTs). */
   PRIVY_APP_ID?: string;
+  /** Supabase admin (service-role) — bypasses RLS, server-only. */
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
   /** KV namespace para rate limit counters — opcional, fallback in-memory. */
   RATE_LIMITS?: KVNamespaceBinding;
 };
@@ -185,18 +189,9 @@ app.use(
   }),
 );
 
-// Smoke endpoint — devuelve el userId + claims del JWT verificado. Útil
-// para test E2E del flow auth completo.
-app.get("/api/me", (c) => {
-  const userId = c.get("userId");
-  const claims = c.get("claims");
-  return c.json({
-    userId,
-    issuer: claims.iss,
-    audience: claims.aud,
-    expiresAt: new Date(claims.exp * 1000).toISOString(),
-  });
-});
+// `/api/me/*` — smoke + preferences (Sprint 1.05). El sub-router hereda
+// el authMiddleware + per-user rate limit que se aplican arriba a `/api/*`.
+app.route("/api/me", meRoutes);
 
 // ─── Fallback handlers ─────────────────────────────────────────────────────
 
