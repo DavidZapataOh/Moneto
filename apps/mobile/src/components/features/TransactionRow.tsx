@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
-import { formatRelative } from "@moneto/utils";
+import { formatAmountForA11y, formatRelative } from "@moneto/utils";
 import { View, Pressable } from "react-native";
 
 import type { Transaction } from "@data/mock";
@@ -76,8 +76,29 @@ export function TransactionRow({ tx, onPress, showDate = true }: TransactionRowP
   const decPart = parts[1] ?? "00";
   const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
 
+  // Accessibility label — humanizado para VoiceOver. El amount se lee
+  // en español natural ("tres mil dólares") en lugar de "tres coma cero
+  // cero cero", que es lo que pasa con el visual mono.
+  const direction = isIncoming ? "Recibiste" : "Enviaste";
+  const counterpartyClause = tx.counterpartyName
+    ? `${isIncoming ? "de" : "a"} ${tx.counterpartyName}`
+    : tx.description;
+  const amountWords =
+    tx.currency === "USD" || tx.currency === "COP"
+      ? formatAmountForA11y(Math.abs(tx.amount), tx.currency)
+      : `${Math.abs(tx.amount)} ${tx.currency}`;
+  const a11yLabel = `${direction} ${amountWords} ${counterpartyClause}${
+    timeLabel ? `, ${timeLabel}` : ""
+  }`;
+
   return (
-    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
+    <Pressable
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={onPress ? "Tocar para ver detalles" : undefined}
+      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+    >
       {/* Layout exactamente como VaultRow: View plano con todo el styling */}
       <View
         style={{

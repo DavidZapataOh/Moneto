@@ -40,7 +40,7 @@ export default function AppearanceScreen() {
   const setPreference = useThemeStore((s) => s.setPreference);
 
   return (
-    <Screen padded edges={["top"]}>
+    <Screen padded edges={["top"]} isModal>
       <View
         style={{
           flexDirection: "row",

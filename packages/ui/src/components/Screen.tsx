@@ -24,6 +24,13 @@ export interface ScreenProps extends ViewProps {
   edges?: Edge[];
   /** Background semantic. Default `primary`. */
   bg?: ScreenBg;
+  /**
+   * Si la pantalla es un modal (presentación slide-from-bottom o
+   * fullScreenModal), aplica `accessibilityViewIsModal` para que
+   * VoiceOver/TalkBack lock-een el focus dentro del modal y no permitan
+   * navigate al content de fondo. Default `false`.
+   */
+  isModal?: boolean;
 }
 
 /**
@@ -55,6 +62,7 @@ export const Screen = forwardRef<View, ScreenProps>(function Screen(
     padded = true,
     edges = ["top", "left", "right"],
     bg = "primary",
+    isModal = false,
     style,
     testID,
     ...rest
@@ -70,6 +78,7 @@ export const Screen = forwardRef<View, ScreenProps>(function Screen(
     <View
       ref={ref}
       testID={testID}
+      accessibilityViewIsModal={isModal}
       style={[
         {
           flex: 1,

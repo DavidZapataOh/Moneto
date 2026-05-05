@@ -14,7 +14,8 @@
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "contrast": "tsx scripts/contrast-check.ts"
   },
   "peerDependencies": {
     "react-native": ">=0.74"
@@ -24,11 +25,16 @@
       "optional": true
     }
   },
+  "dependencies": {
+    "@moneto/utils": "workspace:*"
+  },
   "devDependencies": {
     "@moneto/eslint-config": "workspace:*",
     "@moneto/tsconfig": "workspace:*",
+    "@types/node": "^20.17.10",
     "@types/react-native": "~0.73.0",
     "eslint": "^8.57.1",
+    "tsx": "^4.20.0",
     "typescript": "~5.9.2"
   }
 }

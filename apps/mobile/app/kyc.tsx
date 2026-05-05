@@ -121,7 +121,7 @@ export default function KYCScreen() {
   );
 
   return (
-    <Screen padded edges={["top", "bottom"]}>
+    <Screen padded edges={["top", "bottom"]} isModal>
       <View
         style={{
           flexDirection: "row",

@@ -61,7 +61,7 @@ export default function AssetPrioritiesScreen() {
   };
 
   return (
-    <Screen padded edges={["top", "bottom"]} scroll>
+    <Screen padded edges={["top", "bottom"]} scroll isModal>
       {/* Header — close button + title */}
       <View
         style={{

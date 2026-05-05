@@ -69,7 +69,7 @@ export default function SendScreen() {
   };
 
   return (
-    <Screen padded edges={["top", "bottom"]}>
+    <Screen padded edges={["top", "bottom"]} isModal>
       <View
         style={{
           flexDirection: "row",

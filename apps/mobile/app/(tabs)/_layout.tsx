@@ -2,7 +2,7 @@ import { useTheme, haptics } from "@moneto/ui";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { useCallback, useRef } from "react";
-import { Platform, View, StyleSheet } from "react-native";
+import { AccessibilityInfo, Platform, View, StyleSheet } from "react-native";
 
 import { AnimatedTabIcon } from "@/components/AnimatedTabIcon";
 import { capture, Events, getPostHog } from "@/lib/observability";
@@ -24,6 +24,13 @@ import { useUnreadNotificationCount } from "@hooks/useUnreadNotificationCount";
 
 type TabKey = "saldo" | "tarjeta" | "activos" | "yo";
 
+const TAB_LABEL: Record<TabKey, string> = {
+  saldo: "Saldo",
+  tarjeta: "Tarjeta",
+  activos: "Activos",
+  yo: "Yo",
+};
+
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
   const bottomPad = useTabBarBottomPad();
@@ -41,6 +48,10 @@ export default function TabsLayout() {
       const ph = getPostHog();
       if (ph) capture(ph, Events.tab_switched, { from: prev, to: next });
       currentTab.current = next;
+      // TalkBack/VoiceOver no anuncian consistentemente el tab change
+      // (especialmente Android). Forzamos el announce explícito —
+      // mensaje corto en español con el label de la tab destino.
+      AccessibilityInfo.announceForAccessibility(`${TAB_LABEL[next]}, pestaña seleccionada`);
     }
   }, []);
 

@@ -1,5 +1,6 @@
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
+import { formatAmountForA11y } from "@moneto/utils";
 import { useRouter, type Href } from "expo-router";
 import { View, Pressable } from "react-native";
 
@@ -80,8 +81,27 @@ export function AssetRow({ asset, onPress }: AssetRowProps) {
       </Text>
     );
 
+  // Accessibility label — humanizado por VoiceOver. Composición:
+  // "Bitcoin, 0.042 BTC, 1512 dólares". Si rinde: + "rindiendo X% APY".
+  // Si volátil: + "subió/bajó X% hoy".
+  const a11yNativeBalance = `${formatNative(asset.balance, asset)} ${asset.shortName}`;
+  const a11yUsdValue = formatAmountForA11y(asset.balanceUsd, "USD");
+  const a11yState =
+    asset.isEarning && asset.apy
+      ? `, rindiendo ${(asset.apy * 100).toFixed(1)}% anual`
+      : asset.change24h !== undefined
+        ? `, ${asset.change24h >= 0 ? "subió" : "bajó"} ${Math.abs(asset.change24h * 100).toFixed(1)}% hoy`
+        : "";
+  const a11yLabel = `${asset.name}, ${a11yNativeBalance}, ${a11yUsdValue}${a11yState}`;
+
   return (
-    <Pressable onPress={handlePress} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
+    <Pressable
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={onPress ? "Tocar para ver detalles del asset" : undefined}
+      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+    >
       <View
         style={{
           flexDirection: "row",

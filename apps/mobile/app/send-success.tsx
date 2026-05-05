@@ -72,7 +72,7 @@ export default function SendSuccessScreen() {
   const ctaStyle = useAnimatedStyle(() => ({ opacity: ctaOpacity.value }));
 
   return (
-    <Screen padded>
+    <Screen padded isModal>
       <View style={{ flex: 1, justifyContent: "space-between", paddingVertical: 40 }}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 32 }}>
           {/* Check animation */}

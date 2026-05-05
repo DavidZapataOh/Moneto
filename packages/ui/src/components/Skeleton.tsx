@@ -66,6 +66,10 @@ export function Skeleton({ width, height, radius = 8, style, testID }: SkeletonP
       accessible
       accessibilityLabel="Cargando"
       accessibilityState={{ busy: true }}
+      // `polite` → screen reader anuncia la presencia una vez sin
+      // interrumpir lo que el user esté escuchando. `assertive` sería
+      // intrusivo para un skeleton (no es info crítica).
+      accessibilityLiveRegion="polite"
     />
   );
 }

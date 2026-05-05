@@ -13,7 +13,7 @@ export default function PrivacyScreen() {
   const viewingKeys = useAppStore((s) => s.viewingKeys);
 
   return (
-    <Screen padded scroll edges={["top", "bottom"]}>
+    <Screen padded scroll edges={["top", "bottom"]} isModal>
       <View
         style={{
           flexDirection: "row",

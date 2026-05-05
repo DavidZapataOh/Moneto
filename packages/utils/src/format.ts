@@ -55,3 +55,170 @@ export function getGreeting() {
   if (hour >= 12 && hour < 19) return "Buenas tardes";
   return "Buenas noches";
 }
+
+/**
+ * Humaniza un amount para que VoiceOver/TalkBack lo lea naturalmente
+ * en español. `Intl.NumberFormat` por defecto pasa "$1,234.56" que el
+ * screen reader interpreta como "uno coma dos tres cuatro punto cinco
+ * seis" — desastre cognitivo.
+ *
+ * Esta función produce algo tipo:
+ * - 1234.56 USD → "mil doscientos treinta y cuatro dólares con cincuenta y seis centavos"
+ * - 25 USD → "veinticinco dólares"
+ * - 0.5 USD → "cincuenta centavos"
+ * - -100 USD → "menos cien dólares"
+ *
+ * Se usa SOLO en `accessibilityLabel`. No reemplaza el `formatUsd`
+ * visible que sigue mostrando "$1,234.56" mono.
+ *
+ * @example
+ *   <Text accessibilityLabel={formatAmountForA11y(balance, "USD")}>
+ *     {formatUsd(balance)}
+ *   </Text>
+ */
+export function formatAmountForA11y(amount: number, currency: "USD" | "COP" = "USD"): string {
+  const sign = amount < 0 ? "menos " : "";
+  const abs = Math.abs(amount);
+  const whole = Math.floor(abs);
+  const cents = Math.round((abs - whole) * 100);
+
+  const currencyName = currency === "USD" ? "dólares" : "pesos";
+  const subUnitName = currency === "USD" ? "centavos" : "centavos";
+
+  if (whole === 0 && cents === 0) {
+    return `cero ${currencyName}`;
+  }
+
+  const wholeWords = whole === 0 ? "" : numberToSpanishWords(whole);
+  const wholeUnit =
+    whole === 0
+      ? ""
+      : whole === 1
+        ? `un ${currency === "USD" ? "dólar" : "peso"}`
+        : `${wholeWords} ${currencyName}`;
+
+  if (cents === 0) {
+    return `${sign}${wholeUnit}`.trim();
+  }
+
+  const centsWords = numberToSpanishWords(cents);
+  const centsUnit = `${centsWords} ${subUnitName}`;
+
+  if (whole === 0) {
+    return `${sign}${centsUnit}`.trim();
+  }
+  return `${sign}${wholeUnit} con ${centsUnit}`.trim();
+}
+
+/**
+ * Convierte un entero positivo (0–999.999.999) a palabras en español.
+ * Cubre el rango realista de un balance personal — no soportamos
+ * billones (no aplica a un fintech retail).
+ *
+ * Implementación recursiva por triplets (millones, miles, unidades).
+ * Reglas español: "veintiuno" no "veinte y uno", "ciento" antes de
+ * número (no "cien"), "un mil" se omite ("mil quinientos" no "un mil
+ * quinientos").
+ */
+function numberToSpanishWords(n: number): string {
+  if (n === 0) return "cero";
+  if (n < 0) return `menos ${numberToSpanishWords(-n)}`;
+  if (n >= 1_000_000_000) {
+    // Out of practical range para amounts de un user — return numeric fallback.
+    return String(n);
+  }
+
+  const millions = Math.floor(n / 1_000_000);
+  const remainderAfterMillions = n % 1_000_000;
+  const thousands = Math.floor(remainderAfterMillions / 1_000);
+  const units = remainderAfterMillions % 1_000;
+
+  const parts: string[] = [];
+  if (millions > 0) {
+    if (millions === 1) parts.push("un millón");
+    else parts.push(`${triplet(millions)} millones`);
+  }
+  if (thousands > 0) {
+    if (thousands === 1) parts.push("mil");
+    else parts.push(`${triplet(thousands)} mil`);
+  }
+  if (units > 0) {
+    parts.push(triplet(units));
+  }
+  return parts.join(" ").trim();
+}
+
+const UNITS_0_29 = [
+  "cero",
+  "uno",
+  "dos",
+  "tres",
+  "cuatro",
+  "cinco",
+  "seis",
+  "siete",
+  "ocho",
+  "nueve",
+  "diez",
+  "once",
+  "doce",
+  "trece",
+  "catorce",
+  "quince",
+  "dieciséis",
+  "diecisiete",
+  "dieciocho",
+  "diecinueve",
+  "veinte",
+  "veintiuno",
+  "veintidós",
+  "veintitrés",
+  "veinticuatro",
+  "veinticinco",
+  "veintiséis",
+  "veintisiete",
+  "veintiocho",
+  "veintinueve",
+];
+
+const TENS = [
+  "",
+  "",
+  "veinte",
+  "treinta",
+  "cuarenta",
+  "cincuenta",
+  "sesenta",
+  "setenta",
+  "ochenta",
+  "noventa",
+];
+const HUNDREDS = [
+  "",
+  "ciento",
+  "doscientos",
+  "trescientos",
+  "cuatrocientos",
+  "quinientos",
+  "seiscientos",
+  "setecientos",
+  "ochocientos",
+  "novecientos",
+];
+
+/** 0..999 a palabras. */
+function triplet(n: number): string {
+  if (n < 30) return UNITS_0_29[n] ?? "";
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const u = n % 10;
+    if (u === 0) return TENS[t] ?? "";
+    return `${TENS[t]} y ${UNITS_0_29[u]}`;
+  }
+  // 100–999.
+  if (n === 100) return "cien";
+  const h = Math.floor(n / 100);
+  const rem = n % 100;
+  if (rem === 0) return HUNDREDS[h] ?? "";
+  return `${HUNDREDS[h]} ${triplet(rem)}`;
+}

@@ -41,9 +41,14 @@ export const palette = {
     500: "#7F786C",
     600: "#615B51",
   },
-  success: { base: "#6B7A38", fg: "#A8B65A", bg: "#2A3318" },
-  warning: { base: "#C28920", fg: "#E0A952", bg: "#3D2D0F" },
-  danger: { base: "#A8311A", fg: "#D4572F", bg: "#3D1410" },
+  // `base` = mid-tone para uso libre. `fg` = bright variant (legible en
+  // bg.primary del dark theme). `bg` = tinted background subtle (chips).
+  // `dark` = darker variant SOLO para light theme — `base` no alcanza
+  // contraste WCAG AA en cream sin esto (success 4.40:1, warning 2.85:1
+  // contra `cream[50]`).
+  success: { base: "#6B7A38", fg: "#A8B65A", bg: "#2A3318", dark: "#4F5B26" },
+  warning: { base: "#C28920", fg: "#E0A952", bg: "#3D2D0F", dark: "#7A5712" },
+  danger: { base: "#A8311A", fg: "#D4572F", bg: "#3D1410", dark: "#8E2614" },
 } as const;
 
 export interface ThemeColors {
@@ -110,7 +115,10 @@ export const lightTheme: ThemeColors = {
     pressed: palette.terracota[700],
   },
   value: palette.clay[600],
-  success: palette.success.base,
-  warning: palette.warning.base,
-  danger: palette.danger.base,
+  // Light theme usa `.dark` variants — los `.base` no alcanzan WCAG AA
+  // contra `cream[50]` (success 4.40:1, warning 2.85:1). Ver
+  // `packages/theme/scripts/contrast-check.ts`.
+  success: palette.success.dark,
+  warning: palette.warning.dark,
+  danger: palette.danger.dark,
 };

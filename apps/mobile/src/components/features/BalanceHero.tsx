@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "@moneto/theme";
 import { Text, useTheme, haptics } from "@moneto/ui";
+import { formatAmountForA11y } from "@moneto/utils";
 import { useEffect, useState } from "react";
 import { View, Pressable } from "react-native";
 import Animated, {
@@ -84,6 +85,13 @@ export function BalanceHero({ balance, yieldApy, hidden, onToggleVisibility }: B
   const decPart = parts[1] ?? "00";
   const formattedInt = parseInt(intPart, 10).toLocaleString("en-US");
 
+  // Accessibility label — humanizado para VoiceOver/TalkBack. Si está
+  // hidden, anunciamos eso (no leemos los •••••). Si visible, usamos
+  // `formatAmountForA11y` que lee el monto en español natural.
+  const a11yLabel = hidden
+    ? "Saldo total oculto"
+    : `Saldo total, ${formatAmountForA11y(balance, "USD")}`;
+
   return (
     <View style={{ gap: 12 }}>
       {/* Eyebrow — sin "PRIVADO" (privacidad es promesa invisible, no feature visible) */}
@@ -97,6 +105,8 @@ export function BalanceHero({ balance, yieldApy, hidden, onToggleVisibility }: B
             onToggleVisibility();
           }}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? "Mostrar saldo" : "Ocultar saldo"}
         >
           <Ionicons
             name={hidden ? "eye-off-outline" : "eye-outline"}
@@ -106,9 +116,23 @@ export function BalanceHero({ balance, yieldApy, hidden, onToggleVisibility }: B
         </Pressable>
       </View>
 
-      {/* Hero number — 48pt fits 8-pt grid */}
-      <Animated.View style={balanceStyle}>
-        <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+      {/* Hero number — 48pt fits 8-pt grid. Wrapped en un View con
+          `accessibilityRole="header"` para que VoiceOver/TalkBack lo
+          anuncien como heading + leen el monto humanizado en lugar de
+          "uno coma dos tres cuatro punto cinco seis". */}
+      <Animated.View
+        style={balanceStyle}
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel={a11yLabel}
+      >
+        <View
+          style={{ flexDirection: "row", alignItems: "baseline" }}
+          // El wrapper externo ya provee la a11y label completa
+          // humanizada — los Text internos quedan invisibles al SR.
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
           <Text
             style={{
               fontFamily: fonts.monoMedium,
