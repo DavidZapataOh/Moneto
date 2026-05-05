@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { logger as honoLogger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 
+import { runCleanup } from "./jobs/cleanup";
 import { authMiddleware } from "./middleware/auth";
 import { corsMiddleware } from "./middleware/cors";
 import { formatError, requestIdMiddleware } from "./middleware/error-handler";
@@ -46,6 +47,8 @@ type Bindings = {
   USE_PYTH?: string;
   /** Helius webhook shared secret — match al `authHeader` del dashboard. */
   HELIUS_WEBHOOK_SECRET?: string;
+  /** Helius webhook ID — para auto-add de wallets vía API. */
+  HELIUS_WEBHOOK_ID?: string;
 };
 
 const SERVICE_NAME = "moneto-api";
@@ -251,6 +254,9 @@ app.onError(formatError);
  *
  * El `withSentry` también garantiza que `ctx.waitUntil(...)` se dispara para
  * flushar cualquier event in-flight antes de que el isolate termine.
+ *
+ * `scheduled`: Cloudflare cron triggers definidos en `wrangler.toml`
+ * `[triggers].crons`. Sprint 4.03 corre cleanup diario (3am UTC).
  */
 export default {
   async fetch(
@@ -267,6 +273,33 @@ export default {
       if (axiomClientForFlush) {
         ctx.waitUntil(flushAxiom(axiomClientForFlush));
       }
+    }
+  },
+
+  async scheduled(
+    event: { cron: string; scheduledTime: number },
+    env: Bindings,
+    ctx: { waitUntil: (promise: Promise<unknown>) => void },
+  ): Promise<void> {
+    log.info("scheduled trigger fired", {
+      cron: event.cron,
+      scheduledAt: new Date(event.scheduledTime).toISOString(),
+    });
+
+    // Daily cleanup — el único cron por ahora. Sprint 8 puede agregar
+    // backup polling con un cron *_5min separado.
+    if (event.cron === "0 3 * * *") {
+      ctx.waitUntil(
+        runCleanup(env).catch((err) => {
+          log.error("cleanup job failed", {
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }),
+      );
+    }
+
+    if (axiomClientForFlush) {
+      ctx.waitUntil(flushAxiom(axiomClientForFlush));
     }
   },
 };

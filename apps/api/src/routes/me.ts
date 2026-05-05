@@ -10,6 +10,7 @@ import { getPrivyUserSolanaPubkey, type PrivyAdminEnv } from "../lib/privy-admin
 import { createSupabaseAdminClient, type SupabaseAdminEnv } from "../lib/supabase";
 import { requireUserId } from "../middleware/auth";
 import { createBalanceService, type BalanceServiceEnv } from "../services/balance-service";
+import { addAddressToWebhook, type HeliusConfigEnv } from "../services/helius-config";
 import { createPriceService } from "../services/price-service";
 
 import type { Database, ThemePreference, LanguagePreference, UserPreferences } from "@moneto/db";
@@ -33,7 +34,8 @@ const log = createLogger("api.me");
 
 type Bindings = SupabaseAdminEnv &
   PrivyAdminEnv &
-  BalanceServiceEnv & {
+  BalanceServiceEnv &
+  HeliusConfigEnv & {
     /** "mainnet-beta" | "devnet" — viene del worker env. Default mainnet-beta. */
     SOLANA_NETWORK?: string;
   };
@@ -412,6 +414,19 @@ me.post("/push-tokens", zValidator("json", PostPushTokenSchema), async (c) => {
     log.error("push_tokens upsert failed", { code: tokenErr.code });
     throw new HTTPException(500, { message: "push_token_persist_failed" });
   }
+
+  // 4. Auto-add wallet al Helius webhook (Sprint 4.03). Fire-and-forget
+  // via `executionCtx.waitUntil()` — la respuesta al cliente NO espera
+  // este round trip. Si falla (Helius down, env no provisionado), el
+  // user simplemente no recibe push notifications hasta que un backup
+  // poll o ops manual lo agregue. Idempotent — Helius dedupea.
+  c.executionCtx.waitUntil(
+    addAddressToWebhook(walletAddress, c.env).catch((err) => {
+      log.warn("helius auto-add failed (non-fatal)", {
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }),
+  );
 
   return c.json({ ok: true });
 });

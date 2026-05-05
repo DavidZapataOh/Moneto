@@ -66,6 +66,30 @@ const HeliusBatchSchema = z.array(HeliusEventSchema);
  */
 const ACCEPTED_MINTS = new Set<string>(Object.values(MAINNET_MINTS));
 
+/**
+ * Anti-dust thresholds — Sprint 4.03. Si un sender hace transferencias
+ * <0.01 unit, lo skipeamos (típicamente spam o test transactions). Para
+ * volátiles el threshold es más bajo (0.0001 BTC ~ $5 al precio actual).
+ *
+ * Sprint 5 + spot price service: convertir todo a USD-equivalent con
+ * floor único (e.g., $0.01). Por ahora category-based heuristic.
+ */
+const DUST_THRESHOLD_BY_CATEGORY: Record<string, number> = {
+  stable_usd: 0.01,
+  stable_eur: 0.01,
+  stable_local: 0.01,
+  volatile: 0.0001,
+};
+
+/**
+ * Per-user rate limit anti-spam — Sprint 4.03. Si un user recibe más de
+ * `RATE_LIMIT_PER_HOUR` eventos en la última hora, droppeamos los
+ * subsiguientes. Implementación: COUNT en `processed_signatures` (eficiente
+ * por el index `processed_signatures_user_idx`). Fail-open si la query
+ * falla — preferimos delivery por sobre block estricto.
+ */
+const RATE_LIMIT_PER_HOUR = 100;
+
 helius.post("/incoming", async (c) => {
   const env = c.env;
   if (!env.HELIUS_WEBHOOK_SECRET) {
@@ -146,6 +170,29 @@ helius.post("/incoming", async (c) => {
 
       const assetId = getAssetIdByMint(transfer.mint);
       const symbol = assetId ? getAsset(assetId).symbol : "USDC"; // safe fallback
+      const category = assetId ? getAsset(assetId).category : "stable_usd";
+
+      // ── Anti-dust: skip transfers below threshold per category ─────
+      const dustFloor = DUST_THRESHOLD_BY_CATEGORY[category] ?? 0.01;
+      if (transfer.tokenAmount < dustFloor) {
+        log.debug("dust transfer skipped", {
+          mint: transfer.mint.slice(0, 8),
+          category,
+        });
+        skipped += 1;
+        continue;
+      }
+
+      // ── Per-user rate limit: count eventos last hour ───────────────
+      const overLimit = await isUserOverRateLimit(supabase, indexRow.user_id, RATE_LIMIT_PER_HOUR);
+      if (overLimit) {
+        log.warn("user rate limit exceeded — dropping incoming event", {
+          userId: indexRow.user_id,
+          signature: event.signature.slice(0, 12),
+        });
+        skipped += 1;
+        continue;
+      }
 
       try {
         const result = await processIncomingTransfer(supabase, push, {
@@ -181,5 +228,31 @@ helius.post("/incoming", async (c) => {
 
   return c.json({ ok: true, processed, skipped });
 });
+
+/**
+ * COUNT events del user en la última hora. Usa el index
+ * `processed_signatures_user_idx (user_id, processed_at desc)` así que
+ * la query es O(log N + matches).
+ *
+ * Fail-open: si la query falla, retornamos `false` (no over-limit) para
+ * que el flujo siga. Mejor un push spam ocasional que perder un legit.
+ */
+async function isUserOverRateLimit(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+  limitPerHour: number,
+): Promise<boolean> {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabase
+    .from("processed_signatures")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("processed_at", oneHourAgo);
+  if (error) {
+    log.warn("rate limit count failed (fail-open)", { code: error.code });
+    return false;
+  }
+  return (count ?? 0) >= limitPerHour;
+}
 
 export default helius;
