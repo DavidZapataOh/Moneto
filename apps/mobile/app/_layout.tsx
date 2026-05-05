@@ -143,6 +143,10 @@ function Shell() {
             name="kyc"
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
+          <Stack.Screen
+            name="asset-priorities"
+            options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          />
         </Stack>
         {/* PrivyElements monta UI overlays para flows OAuth (Apple/Google sheets). */}
         <PrivyElements />
