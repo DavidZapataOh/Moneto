@@ -145,6 +145,10 @@ function Shell() {
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
           <Stack.Screen
+            name="swap-success"
+            options={{ presentation: "modal", animation: "fade" }}
+          />
+          <Stack.Screen
             name="appearance"
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />
