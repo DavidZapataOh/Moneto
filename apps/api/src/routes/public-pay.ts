@@ -65,18 +65,26 @@ publicPay.get("/:handle", async (c) => {
     throw new HTTPException(404, { message: "handle_not_found" });
   }
 
-  // Resolver wallet via Privy admin. Si falla, el handle queda "no
-  // payable" — devolvemos 404 para no leakear que el handle existe pero
-  // wallet no.
+  // Resolver wallet via Privy admin con retry — Privy crea el embedded
+  // wallet ~1-3s post-OAuth. Si un user comparte su payroll link
+  // inmediatamente después de signup, Privy puede aún no tener el wallet
+  // listo. 3 attempts × 200ms backoff cubre el race sin ser caro.
+  //
+  // Si después de los retries sigue 404, devolvemos 503 con un retry
+  // hint para el cliente — distinto de "handle inválido" (404) para que
+  // el web landing pueda mostrar copy "Cuenta inicializándose, refrescá
+  // en unos segundos".
   let walletAddress: string;
   try {
-    walletAddress = await getPrivyUserSolanaPubkey(profile.id, c.env);
+    walletAddress = await resolveWalletWithRetry(profile.id, c.env);
   } catch (err) {
     log.warn("wallet resolution failed for public handle", {
       handle,
       err: err instanceof Error ? err.message : String(err),
     });
-    throw new HTTPException(404, { message: "wallet_not_resolvable" });
+    // Distinguimos: handle válido pero wallet aún provisionándose vs
+    // handle inválido. El cliente trata 503 como "retry-able".
+    throw new HTTPException(503, { message: "wallet_not_yet_provisioned" });
   }
 
   const response: PublicPayResponse = {
@@ -97,6 +105,46 @@ publicPay.get("/:handle", async (c) => {
 function isValidHandle(handle: string): boolean {
   if (handle.length < 3 || handle.length > 32) return false;
   return /^[a-z0-9_-]+$/.test(handle);
+}
+
+const RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 200;
+
+/**
+ * Wrapper de `getPrivyUserSolanaPubkey` con retry para race en wallet
+ * creation. Privy `createOnLogin: "users-without-wallets"` toma 1-3s
+ * en producir el wallet — un user que comparte su link inmediatamente
+ * post-signup puede llegar acá antes que el wallet exista.
+ *
+ * Solo retry-amos en error 404 ("no_solana_wallet"). Errores de network
+ * o config se propagan inmediato.
+ */
+async function resolveWalletWithRetry(userId: string, env: Bindings): Promise<string> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await getPrivyUserSolanaPubkey(userId, env);
+    } catch (err) {
+      lastError = err;
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: unknown }).message)
+          : "";
+      // Solo retry en "no_solana_wallet" — los otros (privy_admin_misconfigured,
+      // privy_admin_network) no se mejoran con retry.
+      if (!message.includes("no_solana_wallet") && !message.includes("user_not_found")) {
+        throw err;
+      }
+      if (attempt < RETRY_ATTEMPTS - 1) {
+        await sleep(RETRY_DELAY_MS);
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("wallet_resolution_exhausted");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export default publicPay;
