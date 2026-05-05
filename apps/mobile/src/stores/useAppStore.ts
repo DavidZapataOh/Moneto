@@ -82,8 +82,21 @@ interface AppState {
   setAuthState: (next: AuthState) => void;
   /** Backward-compat shim — usar `setAuthState` en código nuevo. */
   login: () => void;
-  /** Limpia el auth state. Llamar después de Privy logout. */
+  /**
+   * Limpia el auth state. Llamar después de Privy logout — pero el cleanup
+   * canónico end-to-end es `performLogoutCleanup` en `@/lib/auth`, que
+   * además resetea AsyncStorage, observability, singletons, etc. Este
+   * action solo toca el store en memoria.
+   */
   logout: () => void;
+  /**
+   * Reset hard de TODO el state in-memory de la app a sus defaults.
+   * **Preserva** `hasCompletedOnboarding` (el user ya vio el intro y no
+   * tiene sentido re-mostrárselo en el próximo login del mismo device).
+   *
+   * Único caller esperado: `performLogoutCleanup` en `@/lib/auth`.
+   */
+  reset: () => void;
   completeOnboarding: () => void;
 
   // Profile actions
@@ -102,10 +115,26 @@ interface AppState {
   simulateIncomingPayroll: (amount: number) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  authState: { status: "loading" },
+/**
+ * Defaults que aplican a un user "frío" (post-logout o pre-login).
+ * Mock data se mantiene como placeholder UI hasta Sprint 2+ — el reset
+ * vuelve a estos defaults exactamente, NO conserva nada del user previo.
+ */
+const INITIAL_STATE: Pick<
+  AppState,
+  | "authState"
+  | "isAuthenticated"
+  | "user"
+  | "profile"
+  | "balanceHidden"
+  | "balance"
+  | "transactions"
+  | "contacts"
+  | "card"
+  | "viewingKeys"
+> = {
+  authState: { status: "unauthenticated" },
   isAuthenticated: false,
-  hasCompletedOnboarding: false,
   user: mockUser,
   profile: DEFAULT_PROFILE,
   balanceHidden: false,
@@ -114,6 +143,15 @@ export const useAppStore = create<AppState>((set) => ({
   contacts: mockContacts,
   card: mockCard,
   viewingKeys: mockViewingKeys,
+};
+
+export const useAppStore = create<AppState>((set, get) => ({
+  ...INITIAL_STATE,
+  // Override del INITIAL_STATE — al primer mount, queremos `loading`
+  // (mostramos splash hasta que Privy responda) en lugar de `unauthenticated`
+  // (que dispararía render del onboarding antes de tiempo).
+  authState: { status: "loading" },
+  hasCompletedOnboarding: false,
 
   setAuthState: (next) =>
     set({
@@ -134,6 +172,15 @@ export const useAppStore = create<AppState>((set) => ({
       authState: { status: "unauthenticated" },
       isAuthenticated: false,
       profile: DEFAULT_PROFILE,
+    }),
+
+  reset: () =>
+    set({
+      ...INITIAL_STATE,
+      // `hasCompletedOnboarding` es per-device, no per-session — el user
+      // ya vió el intro, mostrárselo otra vez después de un logout es UX
+      // pésimo. Lee del estado actual para preservarlo.
+      hasCompletedOnboarding: get().hasCompletedOnboarding,
     }),
 
   completeOnboarding: () => set({ hasCompletedOnboarding: true }),

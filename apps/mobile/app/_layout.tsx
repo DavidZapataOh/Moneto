@@ -17,6 +17,7 @@ import { useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { useAutoLogoutOnExpired } from "@/hooks/useAutoLogoutOnExpired";
 import { usePrivyAuthSync } from "@/hooks/usePrivyAuthSync";
 import { useThemePreferenceSync } from "@/hooks/useThemePreferenceSync";
 import { bootObservability } from "@/lib/observability";
@@ -86,6 +87,10 @@ function Shell() {
 
   // Sync Privy state → Zustand authState. Single writer, idempotent.
   usePrivyAuthSync();
+
+  // Auto-logout silencioso si el authState llega a `"expired"` (refresh
+  // del Privy token falló). Llama performLogoutCleanup + navigate sin UI.
+  useAutoLogoutOnExpired();
 
   // Sync theme preference local ⇄ remote (Supabase user_preferences).
   // Pull on login (last-write-wins), push debounced en cambios locales.

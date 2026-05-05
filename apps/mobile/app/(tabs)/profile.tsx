@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Screen, SectionHeader, Text, Card, Avatar, Divider, useTheme, haptics } from "@moneto/ui";
 import { useRouter, type Href } from "expo-router";
-import { View, Pressable } from "react-native";
+import { Alert, View, Pressable } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
+import { useLogout } from "@hooks/useLogout";
 import { useTabBarSpace } from "@hooks/useTabBarSpace";
 import { useAppStore } from "@stores/useAppStore";
 import { useThemeStore } from "@stores/useThemeStore";
@@ -34,6 +35,36 @@ export default function ProfileScreen() {
   const user = useAppStore((s) => s.user);
   const themePreference = useThemeStore((s) => s.preference);
   const bottomSpace = useTabBarSpace();
+  const { logout, isLoggingOut } = useLogout();
+
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+    haptics.tap();
+    Alert.alert(
+      "Cerrar sesión",
+      "¿Seguro que querés cerrar sesión? Tu sesión se cerrará completamente. Vas a necesitar Face ID o tu cuenta para volver a entrar.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cerrar sesión",
+          style: "destructive",
+          onPress: async () => {
+            haptics.medium();
+            const result = await logout();
+            if (!result.ok && result.failedAt !== "privy") {
+              // El navigation a /(onboarding) ya pasó (siempre escapamos),
+              // pero avisamos que algo quedó a medio limpiar para que el
+              // user sepa que un kill manual de la app no está de más.
+              Alert.alert(
+                "Sesión cerrada parcialmente",
+                "Cerramos tu sesión pero algo falló al limpiar el cache. Para mayor seguridad cerrá la app y volvé a abrirla.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const sections: Array<{ header: string; items: RowItem[] }> = [
     {
@@ -185,16 +216,19 @@ export default function ProfileScreen() {
       ))}
 
       <Pressable
-        onPress={() => haptics.tap()}
+        onPress={handleLogout}
+        disabled={isLoggingOut}
         hitSlop={8}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isLoggingOut, busy: isLoggingOut }}
         style={({ pressed }) => ({
           marginTop: SECTION_GAP,
-          opacity: pressed ? 0.55 : 1,
+          opacity: isLoggingOut ? 0.5 : pressed ? 0.55 : 1,
         })}
       >
         <View style={{ paddingVertical: 16, alignItems: "center" }}>
           <Text variant="bodyMedium" tone="danger">
-            Cerrar sesión
+            {isLoggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
           </Text>
         </View>
       </Pressable>
