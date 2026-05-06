@@ -19,6 +19,7 @@ import earlyAccessRoutes from "./routes/early-access";
 import meRoutes from "./routes/me";
 import pricesRoutes from "./routes/prices";
 import publicPayRoutes from "./routes/public-pay";
+import usersRoutes from "./routes/users";
 import heliusWebhook from "./routes/webhooks/helius";
 
 interface KVNamespaceBinding {
@@ -227,6 +228,10 @@ app.route("/api/prices", pricesRoutes);
 // `/api/early-access/*` — waitlist para features no live todavía
 // (bridges Sprint 3.08). Idempotent upsert, marketing follow-up.
 app.route("/api/early-access", earlyAccessRoutes);
+
+// `/api/users/*` — directorio interno (search + recent contacts) para
+// el flow P2P send. Sprint 4.05.
+app.route("/api/users", usersRoutes);
 
 // ─── Fallback handlers ─────────────────────────────────────────────────────
 

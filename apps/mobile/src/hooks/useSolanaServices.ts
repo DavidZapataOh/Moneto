@@ -1,4 +1,5 @@
 import { JupiterSwapService } from "@moneto/solana/jupiter";
+import { SplTransferService } from "@moneto/solana/transfer";
 import { Connection } from "@solana/web3.js";
 import { useMemo } from "react";
 
@@ -28,10 +29,13 @@ const SOLANA_RPC_URL = process.env["EXPO_PUBLIC_SOLANA_RPC_URL"] ?? "";
 
 let cachedConnection: Connection | null = null;
 let cachedJupiter: JupiterSwapService | null = null;
+let cachedTransfer: SplTransferService | null = null;
 
 interface SolanaServices {
   connection: Connection;
   jupiter: JupiterSwapService;
+  /** SPL transfer service (Sprint 4.05 P2P send). */
+  transfer: SplTransferService;
 }
 
 export function useSolanaServices(): SolanaServices {
@@ -47,8 +51,6 @@ export function useSolanaServices(): SolanaServices {
       // default no afecta tx send.
       cachedConnection = new Connection(SOLANA_RPC_URL, {
         commitment: "confirmed",
-        // No fast: skip para reducir overhead — fetcheamos getSignatureStatus
-        // manual en JupiterSwapService.confirmTransaction.
       });
     }
 
@@ -56,6 +58,14 @@ export function useSolanaServices(): SolanaServices {
       cachedJupiter = new JupiterSwapService({ connection: cachedConnection });
     }
 
-    return { connection: cachedConnection, jupiter: cachedJupiter };
+    if (!cachedTransfer) {
+      cachedTransfer = new SplTransferService(cachedConnection);
+    }
+
+    return {
+      connection: cachedConnection,
+      jupiter: cachedJupiter,
+      transfer: cachedTransfer,
+    };
   }, []);
 }

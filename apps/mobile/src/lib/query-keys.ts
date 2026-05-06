@@ -38,6 +38,12 @@ export const queryKeys = {
   /** Early access waitlist requests (Sprint 3.08 bridges). */
   earlyAccess: () => ["early-access"] as const,
 
+  // ── User directory (Sprint 4.05 P2P) ─────────────────────────────────
+  /** User search por handle/name. Cache per query string. */
+  userSearch: (q: string) => ["users", "search", q] as const,
+  /** Recent contacts del current user. */
+  recentContacts: () => ["users", "recent-contacts"] as const,
+
   // ── Money ────────────────────────────────────────────────────────────
   /** Balance agregado USD + APY. */
   balance: () => ["balance"] as const,

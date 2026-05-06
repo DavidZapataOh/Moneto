@@ -10,6 +10,10 @@
  * y server (Workers / Deno) cuando aplique.
  */
 
-export const SOLANA_PACKAGE_VERSION = "0.1.0-sprint-3.04";
+export const SOLANA_PACKAGE_VERSION = "0.2.0-sprint-4.05";
 
+// Re-export jupiter desde el root para back-compat con callers
+// existentes (Sprint 3.04+). `transfer` se accede solo via subpath
+// `@moneto/solana/transfer` para evitar colisión de tipos
+// (`SignTransactionFn` existe en ambos módulos con shape idéntico).
 export * from "./jupiter";
