@@ -147,6 +147,10 @@ function Shell() {
             options={{ presentation: "modal", animation: "fade" }}
           />
           <Stack.Screen
+            name="cashout"
+            options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          />
+          <Stack.Screen
             name="privacy"
             options={{ presentation: "modal", animation: "slide_from_bottom" }}
           />

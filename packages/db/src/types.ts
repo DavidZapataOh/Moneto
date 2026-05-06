@@ -267,6 +267,52 @@ type IncomingTransferInsert = {
   block_time: Timestamptz;
 };
 
+// ── Sprint 4.06 — cashouts ──────────────────────────────────────────────
+
+export type CashoutStatus = "queued" | "processing" | "completed" | "failed" | "cancelled";
+export type CashoutLocalCurrency = "COP" | "MXN" | "BRL" | "ARS" | "EUR" | "USD";
+
+type CashoutRow = {
+  id: string;
+  user_id: string;
+  amount_usd: number;
+  fee_usd: number;
+  exchange_rate: number;
+  local_currency: CashoutLocalCurrency;
+  amount_local: number;
+  destination_label: string;
+  destination_account_id: string | null;
+  status: CashoutStatus;
+  estimated_completion_at: Timestamptz | null;
+  provider_reference: string | null;
+  failure_reason: string | null;
+  created_at: Timestamptz;
+  updated_at: Timestamptz;
+  completed_at: Timestamptz | null;
+};
+
+type CashoutInsert = {
+  id?: string;
+  user_id: string;
+  amount_usd: number;
+  fee_usd?: number;
+  exchange_rate: number;
+  local_currency: CashoutLocalCurrency;
+  amount_local: number;
+  destination_label: string;
+  destination_account_id?: string | null;
+  status?: CashoutStatus;
+  estimated_completion_at?: Timestamptz | null;
+  provider_reference?: string | null;
+};
+
+type CashoutUpdate = {
+  status?: CashoutStatus;
+  provider_reference?: string | null;
+  failure_reason?: string | null;
+  completed_at?: Timestamptz | null;
+};
+
 // ─── Database type (Supabase-compatible) ──────────────────────────────────
 
 export interface Database {
@@ -395,6 +441,19 @@ export interface Database {
           },
         ];
       };
+      cashouts: {
+        Row: CashoutRow;
+        Insert: CashoutInsert;
+        Update: CashoutUpdate;
+        Relationships: [
+          {
+            foreignKeyName: "cashouts_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -424,3 +483,4 @@ export type WalletIndex = Database["public"]["Tables"]["wallet_index"]["Row"];
 export type ProcessedSignature = Database["public"]["Tables"]["processed_signatures"]["Row"];
 export type PushToken = Database["public"]["Tables"]["push_tokens"]["Row"];
 export type IncomingTransfer = Database["public"]["Tables"]["incoming_transfers"]["Row"];
+export type Cashout = Database["public"]["Tables"]["cashouts"]["Row"];

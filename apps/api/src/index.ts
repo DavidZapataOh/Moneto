@@ -15,6 +15,7 @@ import { authMiddleware } from "./middleware/auth";
 import { corsMiddleware } from "./middleware/cors";
 import { formatError, requestIdMiddleware } from "./middleware/error-handler";
 import { rateLimit, RATE_LIMIT_PRESETS } from "./middleware/rate-limit";
+import cashoutRoutes from "./routes/cashout";
 import earlyAccessRoutes from "./routes/early-access";
 import meRoutes from "./routes/me";
 import pricesRoutes from "./routes/prices";
@@ -232,6 +233,10 @@ app.route("/api/early-access", earlyAccessRoutes);
 // `/api/users/*` — directorio interno (search + recent contacts) para
 // el flow P2P send. Sprint 4.05.
 app.route("/api/users", usersRoutes);
+
+// `/api/cashout/*` — Sprint 4.06 stub. Money-class rate limit aplicado
+// dentro del sub-router. Sprint 6 reemplaza el handler con Bold integration.
+app.route("/api/cashout", cashoutRoutes);
 
 // ─── Fallback handlers ─────────────────────────────────────────────────────
 
