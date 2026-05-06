@@ -47,7 +47,7 @@
   "devDependencies": {
     "@moneto/eslint-config": "workspace:*",
     "@moneto/tsconfig": "workspace:*",
-    "eslint": "^8.57.1",
+    "eslint": "^10.3.0",
     "typescript": "~5.9.2"
   }
 }

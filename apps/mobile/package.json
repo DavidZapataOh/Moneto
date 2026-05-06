@@ -84,7 +84,7 @@
     "@moneto/eslint-config": "workspace:*",
     "@moneto/tsconfig": "workspace:*",
     "@types/react": "~19.1.0",
-    "eslint": "^8.57.1",
+    "eslint": "^10.3.0",
     "typescript": "~5.9.2"
   }
 }
