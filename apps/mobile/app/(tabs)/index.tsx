@@ -23,6 +23,7 @@ import { EmptyTransactions } from "@components/features/EmptyTransactions";
 import { QuickActions } from "@components/features/QuickActions";
 import { TransactionRow } from "@components/features/TransactionRow";
 import { YieldChart } from "@components/features/YieldChart";
+import { PushPermissionBanner } from "@components/PushPermissionBanner";
 import { ScreenErrorBoundary } from "@components/ScreenErrorBoundary";
 import { Skeleton, BalanceSkeleton, TxRowSkeleton } from "@components/Skeleton";
 import { mockYieldHistory } from "@data/mock";
@@ -145,6 +146,9 @@ export default function HomeScreen() {
       <Animated.View entering={motion.sectionDelayed(120)} style={{ marginTop: SECTION_GAP }}>
         <QuickActions />
       </Animated.View>
+
+      {/* Push permission reminder — only renders when status === "denied" */}
+      <PushPermissionBanner />
 
       {/* Asset strip — horizontal scroll */}
       <Animated.View entering={motion.sectionDelayed(160)} style={{ marginTop: SECTION_GAP }}>

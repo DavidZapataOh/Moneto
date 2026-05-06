@@ -40,11 +40,32 @@ interface ExpoPushResponse {
   data: ExpoPushTicket[];
 }
 
+/**
+ * Channels Android (Sprint 4.04). Match al setup de
+ * `apps/mobile/src/lib/notifications.ts setupAndroidChannels()`. Cambios
+ * acá requieren actualizar mobile + redeploy.
+ *
+ * - `default`: incoming transfers, p2p completed, swap completed —
+ *   high importance, vibration + sound.
+ * - `compliance`: alertas de seguridad (recovery requests, fraud) —
+ *   max importance + bypass DnD.
+ * - `marketing`: novedades del producto, promos — low importance,
+ *   user-mute friendly.
+ */
+export type PushChannelId = "default" | "compliance" | "marketing";
+
 export interface SendPushInput {
   userId: string;
   title: string;
   body: string;
   data?: Record<string, string>;
+  /** Android channel target. Default `"default"`. iOS lo ignora. */
+  channelId?: PushChannelId;
+  /** Si true, suprime sound + banner si la app está foreground.
+   *  Útil para compliance pings durante un flow del user (e.g., en
+   *  medio de un swap, no romperle el focus). Va al `data.silent`
+   *  field para que el handler mobile decida. */
+  silent?: boolean;
 }
 
 export interface PushService {
@@ -59,7 +80,7 @@ export interface PushService {
  */
 export function createPushService(supabase: SupabaseClient<Database>): PushService {
   return {
-    async sendToUser({ userId, title, body, data }: SendPushInput) {
+    async sendToUser({ userId, title, body, data, channelId, silent }: SendPushInput) {
       // 1. Lookup tokens activos del user.
       const { data: tokens, error } = await supabase
         .from("push_tokens")
@@ -76,16 +97,26 @@ export function createPushService(supabase: SupabaseClient<Database>): PushServi
         return { delivered: 0 };
       }
 
+      const targetChannel: PushChannelId = channelId ?? "default";
+
+      // Augmentamos `data` con flag `silent` para que el handler mobile
+      // suprima banner+sound si la app está foreground (Sprint 4.04).
+      const augmentedData = silent ? { ...(data ?? {}), silent: "true" } : data;
+
       // 2. Build Expo messages.
       const messages: ExpoPushMessage[] = tokens.map((t) => ({
         to: t.token,
         title,
         body,
+        // Sound `null` no es válido por Expo schema — usamos "default"
+        // siempre y dejamos al cliente decidir (foreground handler honors
+        // silent). Para `marketing` algunos OEMs ignoran sound de todas
+        // formas dado el LOW importance.
         sound: "default",
-        priority: "high",
-        ttl: 3600, // 1h — incoming transfer es time-sensitive pero no real-time-critical.
-        ...(data ? { data } : {}),
-        ...(t.platform === "android" ? { channelId: "default" } : {}),
+        priority: targetChannel === "compliance" ? "high" : "high",
+        ttl: 3600,
+        ...(augmentedData ? { data: augmentedData } : {}),
+        ...(t.platform === "android" ? { channelId: targetChannel } : {}),
       }));
 
       // 3. POST batch a Expo. Si Expo rechaza el body entero (5xx),

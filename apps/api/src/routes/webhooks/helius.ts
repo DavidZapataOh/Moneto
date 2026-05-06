@@ -82,13 +82,20 @@ const DUST_THRESHOLD_BY_CATEGORY: Record<string, number> = {
 };
 
 /**
- * Per-user rate limit anti-spam — Sprint 4.03. Si un user recibe más de
- * `RATE_LIMIT_PER_HOUR` eventos en la última hora, droppeamos los
- * subsiguientes. Implementación: COUNT en `processed_signatures` (eficiente
- * por el index `processed_signatures_user_idx`). Fail-open si la query
- * falla — preferimos delivery por sobre block estricto.
+ * Per-user rate limits anti-spam — Sprint 4.03 + 4.04.
+ *
+ * Two windows defensivos:
+ * - **Hourly** (Sprint 4.03): cap burst attacks. 100/h.
+ * - **Daily**  (Sprint 4.04): cap sustained spam. 50/day. El plan
+ *   sugiere 30 pero subimos a 50 para reducir false-positives en
+ *   payroll users que reciben 2-3 transferencias/día normales +
+ *   correcciones / refunds ocasionales.
+ *
+ * Si CUALQUIERA se excede, droppeamos. Fail-open en query failures.
+ * Implementación: COUNT en `processed_signatures` (index user_idx).
  */
 const RATE_LIMIT_PER_HOUR = 100;
+const RATE_LIMIT_PER_DAY = 50;
 
 helius.post("/incoming", async (c) => {
   const env = c.env;
@@ -183,12 +190,13 @@ helius.post("/incoming", async (c) => {
         continue;
       }
 
-      // ── Per-user rate limit: count eventos last hour ───────────────
-      const overLimit = await isUserOverRateLimit(supabase, indexRow.user_id, RATE_LIMIT_PER_HOUR);
-      if (overLimit) {
+      // ── Per-user rate limits: hourly + daily (Sprint 4.04) ─────────
+      const limitWindow = await checkUserRateLimits(supabase, indexRow.user_id);
+      if (limitWindow) {
         log.warn("user rate limit exceeded — dropping incoming event", {
           userId: indexRow.user_id,
           signature: event.signature.slice(0, 12),
+          window: limitWindow,
         });
         skipped += 1;
         continue;
@@ -230,29 +238,46 @@ helius.post("/incoming", async (c) => {
 });
 
 /**
- * COUNT events del user en la última hora. Usa el index
- * `processed_signatures_user_idx (user_id, processed_at desc)` así que
- * la query es O(log N + matches).
+ * Check de rate limits hourly + daily. Retorna el window que se excedió
+ * (`"hour"` | `"day"`) o `null` si dentro de límites.
  *
- * Fail-open: si la query falla, retornamos `false` (no over-limit) para
- * que el flujo siga. Mejor un push spam ocasional que perder un legit.
+ * Implementación: 2 COUNT queries en `processed_signatures` (usa el
+ * index `processed_signatures_user_idx`). Fail-open en errors.
+ *
+ * Optimización: chequeamos hourly primero — la mayoría de spam será
+ * burst, así que el daily query solo corre cuando hourly OK.
  */
-async function isUserOverRateLimit(
+async function checkUserRateLimits(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   userId: string,
-  limitPerHour: number,
-): Promise<boolean> {
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count, error } = await supabase
+): Promise<"hour" | "day" | null> {
+  const now = Date.now();
+  const oneHourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+
+  const hourly = await supabase
     .from("processed_signatures")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .gte("processed_at", oneHourAgo);
-  if (error) {
-    log.warn("rate limit count failed (fail-open)", { code: error.code });
-    return false;
+  if (hourly.error) {
+    log.warn("hourly rate limit count failed (fail-open)", { code: hourly.error.code });
+    return null;
   }
-  return (count ?? 0) >= limitPerHour;
+  if ((hourly.count ?? 0) >= RATE_LIMIT_PER_HOUR) return "hour";
+
+  const daily = await supabase
+    .from("processed_signatures")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("processed_at", oneDayAgo);
+  if (daily.error) {
+    log.warn("daily rate limit count failed (fail-open)", { code: daily.error.code });
+    return null;
+  }
+  if ((daily.count ?? 0) >= RATE_LIMIT_PER_DAY) return "day";
+
+  return null;
 }
 
 export default helius;

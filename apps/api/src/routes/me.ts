@@ -367,12 +367,23 @@ const PostPushTokenSchema = z
     /** Expo push token con prefix "ExponentPushToken[...]" o "ExpoPushToken[...]". */
     token: z.string().min(20).max(160),
     platform: PushPlatformSchema,
+    /** Sprint 4.04 — semver del cliente. Permite roll-out condicional de
+     *  features per min version (e.g., new channel introducido en 1.4.0).
+     *  Optional para back-compat con clientes pre-Sprint 4.04.
+     *  Pattern fijo `MAJOR.MINOR.PATCH` (sin prerelease) — ReDoS-safe
+     *  y suficiente para el use case roll-out. */
+    app_version: z
+      .string()
+      .min(5)
+      .max(16)
+      .regex(/^\d{1,4}\.\d{1,4}\.\d{1,4}$/, "must be MAJOR.MINOR.PATCH semver")
+      .optional(),
   })
   .strict();
 
 me.post("/push-tokens", zValidator("json", PostPushTokenSchema), async (c) => {
   const userId = requireUserId(c);
-  const { token, platform } = c.req.valid("json");
+  const { token, platform, app_version: appVersion } = c.req.valid("json");
   const supabase = createSupabaseAdminClient(c.env);
 
   // 1. Resolve wallet pubkey via Privy admin. Si el user todavía no tiene
@@ -405,6 +416,7 @@ me.post("/push-tokens", zValidator("json", PostPushTokenSchema), async (c) => {
       token,
       user_id: userId,
       platform,
+      ...(appVersion !== undefined ? { app_version: appVersion } : {}),
       last_used_at: new Date().toISOString(),
       invalidated_at: null,
     },

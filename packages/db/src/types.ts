@@ -225,6 +225,8 @@ type PushTokenRow = {
   token: string;
   user_id: string;
   platform: PushPlatform;
+  /** Sprint 4.04 — semver del cliente al register. Null para tokens legacy. */
+  app_version: string | null;
   last_used_at: Timestamptz;
   invalidated_at: Timestamptz | null;
   created_at: Timestamptz;
@@ -235,11 +237,13 @@ type PushTokenInsert = {
   token: string;
   user_id: string;
   platform: PushPlatform;
+  app_version?: string | null;
   last_used_at?: Timestamptz;
   invalidated_at?: Timestamptz | null;
 };
 
 type PushTokenUpdate = {
+  app_version?: string | null;
   last_used_at?: Timestamptz;
   invalidated_at?: Timestamptz | null;
 };
