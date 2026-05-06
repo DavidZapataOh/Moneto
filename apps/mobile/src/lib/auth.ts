@@ -5,6 +5,7 @@ import * as LocalAuthentication from "expo-local-authentication";
 
 import { clearTxHistoryCache } from "@hooks/useTxHistory";
 import { useAppStore } from "@stores/useAppStore";
+import { resetFiltersStore } from "@stores/useFiltersStore";
 import { useThemeStore } from "@stores/useThemeStore";
 
 import { resetApiClient } from "./api";
@@ -305,6 +306,9 @@ export async function performLogoutCleanup(deps: LogoutDeps): Promise<LogoutResu
       syncedToRemote: false,
       lastSyncAt: null,
     });
+    // Sprint 4.09 — filters store es session-only pero reset explícito
+    // garantiza zero leak entre user-switches en device sharing.
+    resetFiltersStore();
     completed.push("stores");
   } catch (err) {
     log.error("store reset failed", { err: String(err) });
