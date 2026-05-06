@@ -12,6 +12,7 @@ import { requireUserId } from "../middleware/auth";
 import { createBalanceService, type BalanceServiceEnv } from "../services/balance-service";
 import { addAddressToWebhook, type HeliusConfigEnv } from "../services/helius-config";
 import { createPriceService } from "../services/price-service";
+import { TxHistoryService, type TxHistoryEnv } from "../services/tx-history-service";
 
 import type { Database, ThemePreference, LanguagePreference, UserPreferences } from "@moneto/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -35,7 +36,8 @@ const log = createLogger("api.me");
 type Bindings = SupabaseAdminEnv &
   PrivyAdminEnv &
   BalanceServiceEnv &
-  HeliusConfigEnv & {
+  HeliusConfigEnv &
+  TxHistoryEnv & {
     /** "mainnet-beta" | "devnet" — viene del worker env. Default mainnet-beta. */
     SOLANA_NETWORK?: string;
   };
@@ -352,6 +354,56 @@ me.get("/balance", async (c) => {
     weightedApy: summary.weightedApy,
     fetchedAt: summary.fetchedAt,
   });
+});
+
+// ─── /api/me/transactions ───────────────────────────────────────────────────
+//
+// Sprint 4.07 — historial paginado del user. Cursor-based via signature
+// del Helius Enhanced Transactions API. Sprint 5+ con Umbra wirea
+// decryption client-side de Confidential Balance txs.
+
+const TxHistoryQuerySchema = z.object({
+  /** Signature del último item de la página anterior. Optional para first page. */
+  before: z
+    .string()
+    .min(40)
+    .max(120)
+    .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, "must be base58 signature")
+    .optional(),
+  /** Cap 50, default 20. */
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+});
+
+me.get("/transactions", zValidator("query", TxHistoryQuerySchema), async (c) => {
+  const userId = requireUserId(c);
+  const { before, limit } = c.req.valid("query");
+
+  // Resolve wallet via Privy admin (compartmentalization).
+  let ownerAddress: string;
+  try {
+    ownerAddress = await getPrivyUserSolanaPubkey(userId, c.env);
+  } catch (err) {
+    log.warn("tx history wallet resolution failed", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+    throw new HTTPException(409, { message: "wallet_not_ready" });
+  }
+
+  // Pubkey shape sanity check — defensa contra Privy retornando junk.
+  try {
+    new PublicKey(ownerAddress);
+  } catch {
+    throw new HTTPException(502, { message: "invalid_pubkey_from_privy" });
+  }
+
+  const service = new TxHistoryService(c.env);
+  const result = await service.fetchPage({
+    address: ownerAddress,
+    ...(before ? { before } : {}),
+    ...(limit ? { limit } : {}),
+  });
+
+  return c.json(result);
 });
 
 // ─── /api/me/push-tokens ────────────────────────────────────────────────────

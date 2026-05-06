@@ -225,7 +225,10 @@ export default function HomeScreen() {
               ? {
                   action: {
                     label: "Ver todos",
-                    onPress: () => haptics.tap(),
+                    onPress: () => {
+                      haptics.tap();
+                      router.push("/transactions");
+                    },
                   },
                 }
               : {})}

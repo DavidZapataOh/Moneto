@@ -17,8 +17,14 @@ export type TransactionType =
 export interface Transaction {
   id: string;
   type: TransactionType;
-  amount: number; // USD equivalent, negative = outgoing
-  currency: "USD";
+  /** Display amount con signo (negative = outgoing). Sprint 4.07 deja
+   *  `amount` en native units del asset (no USD-equivalent) — el render
+   *  formatea según `currency`. */
+  amount: number;
+  /** Symbol display: "USD" / "COP" / "BTC" / "SOL" / etc. Sprint 4.07
+   *  relaxed de literal "USD" a string para que el tx history real
+   *  retorne native currency. */
+  currency: string;
   description: string;
   counterpartyName?: string;
   counterpartyHandle?: string;

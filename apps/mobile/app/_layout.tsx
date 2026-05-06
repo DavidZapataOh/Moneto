@@ -178,6 +178,10 @@ function Shell() {
             name="activos/[id]"
             options={{ presentation: "card", animation: "slide_from_right" }}
           />
+          <Stack.Screen
+            name="transactions"
+            options={{ presentation: "card", animation: "slide_from_right" }}
+          />
         </Stack>
         {/* OfflineBanner — slide-down banner cuando perdemos conexión.
             Mounted top-level para que esté visible en cualquier ruta. */}

@@ -3,10 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sentry from "@sentry/react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 
+import { clearTxHistoryCache } from "@hooks/useTxHistory";
 import { useAppStore } from "@stores/useAppStore";
 import { useThemeStore } from "@stores/useThemeStore";
 
 import { resetApiClient } from "./api";
+import { clearPushTokenCache } from "./notifications";
 import { resetUser } from "./observability";
 import { queryClient } from "./query-client";
 import { resetSupabaseClient } from "./supabase";
@@ -309,7 +311,10 @@ export async function performLogoutCleanup(deps: LogoutDeps): Promise<LogoutResu
     failedAt ??= "stores";
   }
 
-  // ── Stage 3: AsyncStorage ─────────────────────────────────────────────
+  // ── Stage 3: AsyncStorage + SecureStore ───────────────────────────────
+  // AsyncStorage: borramos todas las keys con prefix `moneto.` (push
+  // token cache, tx-cache legacy, etc.). SecureStore: borramos keys
+  // explícitamente conocidos — no expone listAll().
   try {
     const allKeys = await AsyncStorage.getAllKeys();
     const toRemove = allKeys.filter(
@@ -318,6 +323,10 @@ export async function performLogoutCleanup(deps: LogoutDeps): Promise<LogoutResu
     if (toRemove.length > 0) {
       await AsyncStorage.multiRemove(toRemove);
     }
+    // SecureStore explicit cleanup — Sprint 4.04 push token timestamps,
+    // Sprint 4.07 tx history cache. Keep esta lista en sync con cualquier
+    // SecureStore.setItemAsync que agreguemos.
+    await Promise.all([clearPushTokenCache(), clearTxHistoryCache()]);
     completed.push("asyncstorage");
   } catch (err) {
     log.error("asyncstorage clear failed", { err: String(err) });
