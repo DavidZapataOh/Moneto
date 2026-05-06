@@ -64,9 +64,18 @@ export default function TransactionsScreen() {
     router.back();
   }, [router]);
 
-  const renderItem = useCallback(({ item }: { item: DecryptedTx }) => {
-    return <TransactionRow tx={adaptDecryptedTx(item)} onPress={() => haptics.tap()} />;
-  }, []);
+  const renderItem = useCallback(
+    ({ item }: { item: DecryptedTx }) => (
+      <TransactionRow
+        tx={adaptDecryptedTx(item)}
+        onPress={() => {
+          haptics.tap();
+          router.push({ pathname: "/tx/[signature]", params: { signature: item.id } });
+        }}
+      />
+    ),
+    [router],
+  );
 
   const keyExtractor = useCallback((item: DecryptedTx) => item.id, []);
 

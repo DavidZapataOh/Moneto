@@ -406,6 +406,48 @@ me.get("/transactions", zValidator("query", TxHistoryQuerySchema), async (c) => 
   return c.json(result);
 });
 
+// ─── /api/me/transactions/:signature — tx detail ───────────────────────────
+//
+// Sprint 4.08. Single-tx fetch via Helius parseTransactions endpoint.
+// Useful para deep links (push notification → tx detail) y fresh data
+// cuando el client no tiene la tx en cache.
+
+const SignatureParamSchema = z.object({
+  signature: z
+    .string()
+    .min(40)
+    .max(120)
+    .regex(/^[1-9A-HJ-NP-Za-km-z]+$/, "must be base58 signature"),
+});
+
+me.get("/transactions/:signature", zValidator("param", SignatureParamSchema), async (c) => {
+  const userId = requireUserId(c);
+  const { signature } = c.req.valid("param");
+
+  let ownerAddress: string;
+  try {
+    ownerAddress = await getPrivyUserSolanaPubkey(userId, c.env);
+  } catch (err) {
+    log.warn("tx detail wallet resolution failed", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+    throw new HTTPException(409, { message: "wallet_not_ready" });
+  }
+
+  try {
+    new PublicKey(ownerAddress);
+  } catch {
+    throw new HTTPException(502, { message: "invalid_pubkey_from_privy" });
+  }
+
+  const service = new TxHistoryService(c.env);
+  const tx = await service.fetchByCSignature(signature, ownerAddress);
+  if (!tx) {
+    throw new HTTPException(404, { message: "tx_not_found" });
+  }
+  return c.json(tx);
+});
+
 // ─── /api/me/push-tokens ────────────────────────────────────────────────────
 //
 // Sprint 4.01 — registro de Expo push tokens. Side effect: bindea el

@@ -182,6 +182,10 @@ function Shell() {
             name="transactions"
             options={{ presentation: "card", animation: "slide_from_right" }}
           />
+          <Stack.Screen
+            name="tx/[signature]"
+            options={{ presentation: "card", animation: "slide_from_right" }}
+          />
         </Stack>
         {/* OfflineBanner — slide-down banner cuando perdemos conexión.
             Mounted top-level para que esté visible en cualquier ruta. */}

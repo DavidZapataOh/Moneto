@@ -60,8 +60,25 @@ export function usePushSetup(): void {
   // ── Notification tap → deep link router ──────────────────────────────
   useEffect(() => {
     const cleanup = addNotificationResponseListener((data) => {
+      const type = data["type"];
+      log.debug("notification tap", { type });
+
+      // Sprint 4.08: incoming_transfer ahora puede deep-link al tx detail
+      // si tenemos signature. Sin signature (push del Sprint 4.04 stub),
+      // fallback al tab Saldo.
+      if (
+        (type === "incoming_transfer" || type === "incoming_shielded") &&
+        data["signature"] &&
+        data["signature"].length >= 40
+      ) {
+        router.push({
+          pathname: "/tx/[signature]",
+          params: { signature: data["signature"] },
+        });
+        return;
+      }
+
       const target = resolveDeepLink(data);
-      log.debug("notification tap", { type: data["type"], target });
       router.push(target);
     });
     return cleanup;

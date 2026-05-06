@@ -129,6 +129,46 @@ interface HeliusEvent {
 export class TxHistoryService {
   constructor(private readonly env: TxHistoryEnv) {}
 
+  /**
+   * Fetch single tx detail por signature. Sprint 4.08.
+   *
+   * Strategy: usar Helius `parseTransactions` POST endpoint que acepta
+   * un array de signatures. Retorna `null` cuando la tx no existe o no
+   * involucra al user (post-classify filter).
+   */
+  async fetchByCSignature(signature: string, userAddress: string): Promise<DecryptedTx | null> {
+    if (!this.env.HELIUS_API_KEY) {
+      log.warn("helius api key missing — tx detail unavailable");
+      return null;
+    }
+
+    const url = `${HELIUS_API_BASE}/transactions?api-key=${this.env.HELIUS_API_KEY}`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ transactions: [signature] }),
+      });
+    } catch (err) {
+      log.warn("helius tx detail fetch error", { err: String(err) });
+      return null;
+    }
+    if (!res.ok) {
+      log.warn("helius tx detail non-2xx", { status: res.status });
+      return null;
+    }
+    let raw: HeliusEvent[];
+    try {
+      raw = (await res.json()) as HeliusEvent[];
+    } catch {
+      return null;
+    }
+    const evt = raw[0];
+    if (!evt) return null;
+    return classify(evt, userAddress);
+  }
+
   async fetchPage(params: FetchPageParams): Promise<FetchPageResult> {
     if (!this.env.HELIUS_API_KEY) {
       log.warn("helius api key missing — tx history unavailable");
